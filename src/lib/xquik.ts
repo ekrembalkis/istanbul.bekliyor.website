@@ -1,6 +1,5 @@
-// Xquik API proxy — calls go through the backend
-// In production, these would go through your own API route to protect keys
-// For now, we use the Xquik MCP tool results cached/passed from the panel operator
+const BASE_URL = 'https://xquik.com/api/v1'
+const API_KEY = import.meta.env.VITE_XQUIK_API_KEY?.trim() || ''
 
 export interface StyleProfile {
   xUsername: string
@@ -17,16 +16,6 @@ export interface StyleTweet {
   authorUsername: string
 }
 
-export interface ComposeResult {
-  contentRules?: { rule: string }[]
-  followUpQuestions?: string[]
-  compositionGuidance?: string[]
-  examplePatterns?: { pattern: string; description: string }[]
-  intentUrl?: string
-  nextStep?: string
-  styleTweets?: StyleTweet[]
-}
-
 export interface ScoreResult {
   passed: boolean
   passedCount: number
@@ -36,33 +25,126 @@ export interface ScoreResult {
   checklist: { factor: string; passed: boolean }[]
 }
 
-// Local storage keys
-const STYLES_KEY = 'ib_styles'
-const DRAFTS_KEY = 'ib_drafts'
-
-// Style profiles stored locally (from MCP tool results)
-export function getSavedStyles(): StyleProfile[] {
-  try {
-    return JSON.parse(localStorage.getItem(STYLES_KEY) || '[]')
-  } catch { return [] }
+export interface ComposeRefineResult {
+  compositionGuidance: string[]
+  examplePatterns: { pattern: string; description: string }[]
+  intentUrl: string
+  nextStep: string
 }
 
-export function saveStyle(style: StyleProfile) {
-  const styles = getSavedStyles().filter(s => s.xUsername !== style.xUsername)
-  styles.unshift(style)
-  localStorage.setItem(STYLES_KEY, JSON.stringify(styles))
+// ── Core API Caller ──
+async function api<T = unknown>(path: string, options?: { method?: string; body?: unknown }): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: options?.method || 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+    },
+    body: options?.body ? JSON.stringify(options.body) : undefined,
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(err.message || err.error || `API error ${res.status}`)
+  }
+
+  if (res.status === 204) return {} as T
+  return res.json()
 }
 
-export function deleteStyle(username: string) {
-  const styles = getSavedStyles().filter(s => s.xUsername !== username)
-  localStorage.setItem(STYLES_KEY, JSON.stringify(styles))
+// ── Style Operations ──
+
+/** Analyze a user's writing style from their recent tweets */
+export async function analyzeStyle(username: string): Promise<StyleProfile> {
+  return api<StyleProfile>('/styles', {
+    method: 'POST',
+    body: { username: username.replace('@', '') }
+  })
 }
 
-export function getStyle(username: string): StyleProfile | null {
-  return getSavedStyles().find(s => s.xUsername === username) || null
+/** Get a cached style profile */
+export async function getStyleFromAPI(username: string): Promise<StyleProfile> {
+  return api<StyleProfile>(`/styles/${encodeURIComponent(username.replace('@', ''))}`)
 }
 
-// Draft management
+/** List all cached styles */
+export async function listStyles(): Promise<{ styles: StyleProfile[] }> {
+  return api<{ styles: StyleProfile[] }>('/styles')
+}
+
+/** Save custom tweets as a style (FREE) */
+export async function saveCustomStyle(username: string, label: string, tweets: string[]): Promise<StyleProfile> {
+  return api<StyleProfile>(`/styles/${encodeURIComponent(username.replace('@', ''))}`, {
+    method: 'PUT',
+    body: {
+      label,
+      tweets: tweets.map(text => ({ text }))
+    }
+  })
+}
+
+/** Delete a cached style */
+export async function deleteStyleFromAPI(username: string): Promise<void> {
+  await api(`/styles/${encodeURIComponent(username.replace('@', ''))}`, { method: 'DELETE' })
+}
+
+// ── Compose Operations ──
+
+/** Step 1: Get composition guidance with style matching */
+export async function composeRefine(opts: {
+  topic: string
+  tone: string
+  goal: string
+  styleUsername?: string
+  mediaType?: string
+}): Promise<ComposeRefineResult> {
+  return api<ComposeRefineResult>('/compose', {
+    method: 'POST',
+    body: {
+      step: 'refine',
+      topic: opts.topic,
+      tone: opts.tone,
+      goal: opts.goal,
+      styleUsername: opts.styleUsername?.replace('@', ''),
+      mediaType: opts.mediaType || 'photo',
+    }
+  })
+}
+
+/** Step 2: Score a draft tweet against 11 algorithm checks */
+export async function scoreDraft(draft: string, hasMedia = true): Promise<ScoreResult> {
+  return api<ScoreResult>('/compose', {
+    method: 'POST',
+    body: {
+      step: 'score',
+      draft,
+      hasMedia,
+      hasLink: false,
+    }
+  })
+}
+
+// ── Tweet Search ──
+export async function searchTweets(query: string, limit = 50): Promise<{ tweets: StyleTweet[] }> {
+  return api<{ tweets: StyleTweet[] }>(`/x/tweets/search?q=${encodeURIComponent(query)}&limit=${limit}`)
+}
+
+// ── User Lookup ──
+export interface XUser {
+  id: string
+  username: string
+  name: string
+  followers?: number
+  following?: number
+  verified?: boolean
+  description?: string
+}
+
+export async function lookupUser(username: string): Promise<XUser> {
+  return api<XUser>(`/x/users/${encodeURIComponent(username.replace('@', ''))}`)
+}
+
+// ── Local Storage for Drafts ──
 export interface Draft {
   id: string
   text: string
@@ -73,10 +155,10 @@ export interface Draft {
   createdAt: string
 }
 
+const DRAFTS_KEY = 'ib_drafts'
+
 export function getSavedDrafts(): Draft[] {
-  try {
-    return JSON.parse(localStorage.getItem(DRAFTS_KEY) || '[]')
-  } catch { return [] }
+  try { return JSON.parse(localStorage.getItem(DRAFTS_KEY) || '[]') } catch { return [] }
 }
 
 export function saveDraft(draft: Draft) {
@@ -88,4 +170,9 @@ export function saveDraft(draft: Draft) {
 export function deleteDraft(id: string) {
   const drafts = getSavedDrafts().filter(d => d.id !== id)
   localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts))
+}
+
+/** Check if API key is configured */
+export function hasApiKey(): boolean {
+  return !!API_KEY && API_KEY.startsWith('xq_')
 }
