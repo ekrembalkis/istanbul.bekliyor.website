@@ -138,6 +138,8 @@ export interface XUser {
   following?: number
   verified?: boolean
   description?: string
+  profilePicture?: string
+  statusesCount?: number
 }
 
 export async function lookupUser(username: string): Promise<XUser> {

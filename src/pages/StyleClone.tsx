@@ -19,6 +19,7 @@ export default function StyleClone() {
   const [currentStyle, setCurrentStyle] = useState<StyleProfile | null>(null)
   const [userInfo, setUserInfo] = useState<XUser | null>(null)
   const [styles, setStyles] = useState<StyleProfile[]>([])
+  const [userCache, setUserCache] = useState<Record<string, XUser>>({})
   const [error, setError] = useState('')
 
   // ── Manual ──
@@ -42,7 +43,16 @@ export default function StyleClone() {
   useEffect(() => {
     setDrafts(getSavedDrafts())
     if (apiReady) {
-      listStyles().then(res => setStyles(res.styles || [])).catch(() => {})
+      listStyles().then(res => {
+        const s = res.styles || []
+        setStyles(s)
+        // Fetch profile pictures for all cached styles
+        s.forEach(style => {
+          lookupUser(style.xUsername)
+            .then(user => setUserCache(prev => ({ ...prev, [style.xUsername]: user })))
+            .catch(() => {})
+        })
+      }).catch(() => {})
     }
   }, [])
 
@@ -71,6 +81,7 @@ export default function StyleClone() {
 
       if (user.status === 'fulfilled') {
         setUserInfo(user.value)
+        setUserCache(prev => ({ ...prev, [username.replace('@', '')]: user.value }))
       }
     } catch (e: any) {
       setError(e.message || 'Bir hata oluştu')
@@ -292,10 +303,13 @@ export default function StyleClone() {
                 <div className="card p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      {/* Avatar placeholder */}
-                      <div className="w-12 h-12 rounded-full bg-brand-red/10 flex items-center justify-center text-brand-red font-bold text-lg">
-                        {currentStyle.xUsername[0]?.toUpperCase()}
-                      </div>
+                      {userInfo?.profilePicture ? (
+                        <img src={userInfo.profilePicture.replace('_normal', '_200x200')} alt="" className="w-12 h-12 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-brand-red/10 flex items-center justify-center text-brand-red font-bold text-lg">
+                          {currentStyle.xUsername[0]?.toUpperCase()}
+                        </div>
+                      )}
                       <div>
                         <h3 className="font-bold text-slate-700 dark:text-slate-200">@{currentStyle.xUsername}</h3>
                         {userInfo && <div className="text-xs text-slate-400">{userInfo.name} · {userInfo.followers?.toLocaleString()} takipçi</div>}
@@ -396,9 +410,13 @@ export default function StyleClone() {
                       onClick={() => handleLoadStyle(style.xUsername)}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/[0.08] flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
-                          {style.xUsername[0]?.toUpperCase()}
-                        </div>
+                        {userCache[style.xUsername]?.profilePicture ? (
+                          <img src={userCache[style.xUsername].profilePicture!.replace('_normal', '_200x200')} alt="" className="w-8 h-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/[0.08] flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                            {style.xUsername[0]?.toUpperCase()}
+                          </div>
+                        )}
                         <div>
                           <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">@{style.xUsername}</div>
                           <div className="text-[10px] text-slate-400">{style.tweetCount} tweet · {new Date(style.fetchedAt).toLocaleDateString('tr-TR')}</div>
