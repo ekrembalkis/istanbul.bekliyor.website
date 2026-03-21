@@ -7,6 +7,7 @@
     { "source": "/api/extract-topics", "destination": "/api/extract-topics" },
     { "source": "/api/generate-prompt", "destination": "/api/generate-prompt" },
     { "source": "/api/search-viral", "destination": "/api/search-viral" },
+    { "source": "/api/analyze-personality", "destination": "/api/analyze-personality" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
