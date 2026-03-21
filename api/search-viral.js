@@ -5,14 +5,15 @@
 // Merge: dedup by ID, sort by likes
 
 // Broad keyword sets per category (much wider than before)
+// Max ~150 chars per query to avoid X search rejection (>200 chars fails)
 const CATEGORY_KEYWORDS = {
-  siyaset: '(bakan OR meclis OR CHP OR AKP OR MHP OR HDP OR İYİ OR seçim OR cumhurbaş OR mahkeme OR adalet OR muhalefet OR hükümet OR tutukl OR siyaset OR milletvekil OR erdoğan OR imamoğlu OR özel OR bahçeli OR kılıçdaroğlu OR vali OR belediye OR ysk OR anayasa OR tbmm OR parti)',
-  ekonomi: '(dolar OR euro OR borsa OR enflasyon OR faiz OR altın OR petrol OR zam OR maaş OR emekli OR bist OR kira OR konut OR merkez OR TL OR ekonomi OR ihracat OR ithalat OR vergi OR sgk OR asgari OR motorin OR benzin OR mazot)',
-  spor: '(galatasaray OR fenerbahçe OR beşiktaş OR trabzonspor OR süper lig OR şampiyon OR osimhen OR maç OR gol OR hakem OR futbol OR milli takım OR basketbol OR voleybol OR olimpiyat OR derbi OR transfer OR teknik direktör)',
-  teknoloji: '(yapay zeka OR teknoloji OR yazılım OR uygulama OR iha OR drone OR robot OR siber OR dijital OR startup OR bilişim OR kodlama OR intel OR nvidia OR apple OR google OR tesla OR spacex)',
-  bilim: '(bilim OR uzay OR araştırma OR NASA OR keşif OR fizik OR kimya OR biyoloji OR üniversite OR akademi OR tübitak OR genom OR iklim OR deprem)',
-  kultur: '(film OR dizi OR müzik OR kitap OR sinema OR sanat OR konser OR tiyatro OR roman OR albüm OR netflix OR spotify OR ödül OR festival OR sergi)',
-  gundem: '(son dakika OR gündem OR flaş OR acil OR deprem OR sel OR yangın OR kaza OR patlama OR savaş OR ateşkes OR bm OR nato)',
+  siyaset: '(bakan OR meclis OR CHP OR AKP OR MHP OR seçim OR mahkeme OR adalet OR hükümet OR erdoğan OR imamoğlu OR belediye OR tbmm)',
+  ekonomi: '(dolar OR borsa OR enflasyon OR faiz OR altın OR petrol OR zam OR maaş OR emekli OR bist OR kira OR motorin OR ekonomi)',
+  spor: '(galatasaray OR fenerbahçe OR beşiktaş OR trabzonspor OR süper lig OR osimhen OR maç OR gol OR futbol)',
+  teknoloji: '(yapay zeka OR teknoloji OR yazılım OR iha OR drone OR siber OR dijital OR startup)',
+  bilim: '(bilim OR uzay OR araştırma OR NASA OR fizik OR üniversite OR tübitak OR iklim OR deprem)',
+  kultur: '(film OR dizi OR müzik OR kitap OR sinema OR sanat OR konser OR netflix OR festival)',
+  gundem: '(son dakika OR gündem OR deprem OR sel OR yangın OR savaş OR ateşkes)',
 }
 
 // Regex patterns for client-side categorization of pool tweets
