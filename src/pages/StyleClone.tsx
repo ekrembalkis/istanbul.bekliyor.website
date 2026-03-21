@@ -56,6 +56,11 @@ export default function StyleClone() {
   const [checkLoading, setCheckLoading] = useState(false)
   const [checkOpen, setCheckOpen] = useState(false)
 
+  // ── Viral tweet discovery (quote mode) ──
+  const [viralTweets, setViralTweets] = useState<{ id: string; text: string; author: string; likeCount: number; retweetCount: number }[]>([])
+  const [viralCategory, setViralCategory] = useState<TopicCategory>('siyaset')
+  const [viralLoading, setViralLoading] = useState(false)
+
   // ── Manual ──
   const [manualTweets, setManualTweets] = useState('')
   const [showManual, setShowManual] = useState(false)
@@ -354,6 +359,19 @@ export default function StyleClone() {
   }
 
   const campaignCheck = checkText.trim() ? checkCampaignRules(checkText) : null
+
+  // ── Viral tweet search ──
+  const searchViralTweets = async (cat: TopicCategory) => {
+    setViralLoading(true)
+    try {
+      const res = await fetch(`/api/search-viral?category=${cat}&limit=6`)
+      if (res.ok) {
+        const data = await res.json()
+        setViralTweets(data.tweets || [])
+      }
+    } catch { /* optional */ }
+    setViralLoading(false)
+  }
 
   // ═══════════ UI ═══════════
   if (!apiReady) {
@@ -751,6 +769,66 @@ export default function StyleClone() {
                         <span className="font-semibold text-slate-600 dark:text-slate-300">@{quoteTweetAuthor}:</span> {quoteTweetText.substring(0, 150)}{quoteTweetText.length > 150 ? '...' : ''}
                       </div>
                     )}
+
+                    {/* Viral tweet discovery */}
+                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold text-slate-400 tracking-wider">VIRAL TWEET BUL</span>
+                        <button
+                          onClick={() => searchViralTweets(viralCategory)}
+                          disabled={viralLoading}
+                          className="text-[10px] text-blue-500 hover:text-blue-600 dark:text-blue-400 transition-colors"
+                        >
+                          {viralLoading ? 'Arıyor...' : 'Ara'}
+                        </button>
+                      </div>
+                      <div className="flex gap-0.5 bg-slate-100 dark:bg-white/[0.04] rounded-md p-0.5 mb-2">
+                        {TOPIC_CATEGORIES.map(cat => (
+                          <button
+                            key={cat.key}
+                            onClick={() => { setViralCategory(cat.key); setViralTweets([]) }}
+                            className={`flex-1 text-[9px] py-1 rounded transition-all ${
+                              viralCategory === cat.key
+                                ? 'bg-white dark:bg-dark-card text-slate-700 dark:text-white shadow-sm font-medium'
+                                : 'text-slate-400 hover:text-slate-600'
+                            }`}
+                          >
+                            {cat.label}
+                          </button>
+                        ))}
+                      </div>
+                      {viralLoading && (
+                        <div className="flex items-center justify-center py-4 text-slate-400">
+                          <svg className="w-4 h-4 animate-spin mr-2" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" /><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" className="opacity-75" /></svg>
+                          <span className="text-[10px]">Viral tweet'ler aranıyor...</span>
+                        </div>
+                      )}
+                      {viralTweets.length > 0 && (
+                        <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                          {viralTweets.map(vt => (
+                            <div key={vt.id} className="bg-white dark:bg-dark-card rounded-lg p-2.5 border border-slate-100 dark:border-white/[0.06] hover:border-blue-200 dark:hover:border-blue-500/20 transition-colors group">
+                              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-3">{vt.text}</p>
+                              <div className="flex items-center justify-between mt-1.5">
+                                <div className="flex items-center gap-3 text-[10px] text-slate-400">
+                                  <span className="font-medium">@{vt.author}</span>
+                                  <span>♥ {vt.likeCount.toLocaleString()}</span>
+                                  {vt.retweetCount > 0 && <span>↻ {vt.retweetCount.toLocaleString()}</span>}
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setQuoteTweetText(vt.text)
+                                    setQuoteTweetAuthor(vt.author)
+                                  }}
+                                  className="text-[10px] text-blue-500 hover:text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  Quote Et
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
