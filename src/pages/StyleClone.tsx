@@ -234,7 +234,7 @@ export default function StyleClone() {
         topic: composeTopic,
         tone: composeTone,
         goal: composeGoal,
-        count: composeMode === 'thread' ? 1 : tweetCount,
+        count: tweetCount,
         cloneMode,
         topicContext: topicContext || undefined,
         mode: composeMode,

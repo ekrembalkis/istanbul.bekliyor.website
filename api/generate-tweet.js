@@ -176,7 +176,7 @@ ${modeInstruction}`
     // Parse tweets from numbered list
     const tweets = rawText
       .split('\n')
-      .map(line => line.replace(/^\d+[\.\)]\s*/, '').trim())
+      .map(line => line.replace(/^\d+[\.\)\/]\s*/, '').trim())
       .filter(line => line.length > 20
         && !line.toLowerCase().startsWith('tamam')
         && !line.toLowerCase().startsWith('iste')
@@ -190,13 +190,22 @@ ${modeInstruction}`
       return res.status(500).json({ error: 'Generation failed', raw: rawText })
     }
 
-    // 6. Score each tweet and auto-revise if needed
+    // 6. Score tweets (thread mode: score only last tweet)
     const results = []
-    for (const tweet of tweets.slice(0, count)) {
+    const tweetsToProcess = mode === 'thread' ? tweets : tweets.slice(0, count)
+    for (let idx = 0; idx < tweetsToProcess.length; idx++) {
+      const tweet = tweetsToProcess[idx]
+      const isThreadNonLast = mode === 'thread' && idx < tweetsToProcess.length - 1
       let currentDraft = tweet
       let scoreData = null
       let attempts = 0
       const tweetOverrides = [...styleOverrides]
+
+      // Thread: skip scoring for non-last tweets
+      if (isThreadNonLast) {
+        results.push({ tweet: currentDraft, score: null, attempts: 0, styleOverrides: tweetOverrides })
+        continue
+      }
 
       while (attempts < 3) {
         attempts++
