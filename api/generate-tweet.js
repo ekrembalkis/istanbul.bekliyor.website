@@ -103,6 +103,11 @@ export default async function handler(req, res) {
       const topicCtx = (d.topicProfiles || [])
         .map(tp => `- ${tp.topic}: ${tp.behavior}`)
         .join('\n')
+      const cogFilters = (d.cognitiveFilters || []).map(f => `- ${f}`).join('\n')
+      const narTech = (d.narrativeTechniques || []).map(f => `- ${f}`).join('\n')
+      const ironyTech = (d.ironyTechniques || []).map(f => `- ${f}`).join('\n')
+      const ironyExamples = (d.ironyExamples || []).map((e, i) => `${i + 1}. "${e}"`).join('\n')
+
       dnaBlock = `
 KISILIK DNA (bu kisinin gercek kisiligi — tweetleri buna gore yaz):
 Arketip: ${d.identity?.archetype || ''}
@@ -122,6 +127,10 @@ Tepkiler:
 Asla yapmaz: ${(d.boundaries?.neverDoes || []).join(', ')}
 Her zaman yapar: ${(d.boundaries?.alwaysDoes || []).join(', ')}
 ${topicCtx ? `\nKonu bazli davranis:\n${topicCtx}` : ''}
+${cogFilters ? `\nBILISSEL FILTRELER (bu kisi olaylari su prizmadan gorur):\n${cogFilters}` : ''}
+${narTech ? `\nANLATIM TEKNIKLERI (boyle yazar):\n${narTech}` : ''}
+${ironyTech ? `\nIRONI TEKNIKLERI (ironiyi boyle kullanir — DOGRUDAN sevinme veya kufur etme, bu teknikleri kullan):\n${ironyTech}` : ''}
+${ironyExamples ? `\nGERCEK IRONI ORNEKLERI (bu kisinin gercek tweetleri — bu tarzi taklit et):\n${ironyExamples}` : ''}
 ${d.contextualBehavior ? `\nMutlu olunca: ${d.contextualBehavior.whenHappy}\nSinirli olunca: ${d.contextualBehavior.whenAngry}` : ''}
 
 Kisilik skorlari: Formality ${traits.formality || 0}/100, Humor ${traits.humor || 0}/100, Controversy ${traits.controversy || 0}/100

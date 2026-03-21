@@ -60,6 +60,18 @@ Asagidaki JSON yapisini eksiksiz doldur. Turkce yaz.
       "typicalReaction": "bu konuda bir haber/olay olunca nasil tepki verir"
     }
   ],
+  "cognitiveFilters": [
+    "bu kisi olaylari hangi prizmadan gorur? Ornegin: 'her seyi futbola baglar', 'her konuyu paraya cevirir', 'ciddi konulari kendi yasantisina indirger'. En az 2 filtre yaz."
+  ],
+  "narrativeTechniques": [
+    "bu kisi nasil hikaye anlatir / nasil komik olur? Ornegin: 'somut detay verir (isim, sayi, yer)', 'absurt kisisel itiraflar yapar', 'beklenmedik baglam degistirir'. Tweetlerden cikar, en az 3 madde."
+  ],
+  "ironyTechniques": [
+    "bu kisi ironiyi nasil kullanir? Ornegin: 'understatement (buyuk olayi kucuk gosterir)', 'reframing (iyi haberi kotu gibi sunar)', 'absurt baglam kaydirma (ciddi konuyu alakasiz seye baglar)'. Tweetlerden cikar, en az 2 madde."
+  ],
+  "ironyExamples": [
+    "tweetlerden 3 GERCEK ironi/mizah ornegi sec ve oldugu gibi yaz. Bunlar modelin ogrenmesi icin few-shot ornek olacak."
+  ],
   "contextualBehavior": {
     "whenHappy": "mutlu olunca ne yapar",
     "whenAngry": "sinirli olunca ne yapar",

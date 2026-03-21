@@ -437,6 +437,10 @@ export interface PersonalityDNA {
     behavior: string
     typicalReaction: string
   }[]
+  cognitiveFilters?: string[]
+  narrativeTechniques?: string[]
+  ironyTechniques?: string[]
+  ironyExamples?: string[]
   contextualBehavior?: {
     whenHappy: string
     whenAngry: string
