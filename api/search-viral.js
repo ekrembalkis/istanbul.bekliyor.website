@@ -43,7 +43,7 @@ export default async function handler(req, res) {
       .map(t => ({
         id: t.id,
         text: t.text.replace(/https?:\/\/\S+/g, '').trim(),
-        author: t.authorUsername || '',
+        author: t.author?.username || t.authorUsername || '',
         likeCount: t.likeCount || 0,
         retweetCount: t.retweetCount || 0,
         replyCount: t.replyCount || 0,
