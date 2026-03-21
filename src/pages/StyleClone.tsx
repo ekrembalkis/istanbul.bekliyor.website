@@ -96,7 +96,7 @@ export default function StyleClone() {
     setError('')
     setUserInfo(null)
     setCurrentStyle(null)
-    setDeepProgress('Kullanici bilgisi aliniyor...')
+    setDeepProgress('Kullanıcı bilgisi alınıyor...')
 
     // 1. Fetch user info first (free call)
     try {
@@ -106,10 +106,10 @@ export default function StyleClone() {
     } catch { /* user info optional */ }
 
     // 2. Start extraction job
-    setDeepProgress('Derin analiz baslatiliyor (en iyi tweetler cekilecek)...')
+    setDeepProgress('Derin analiz başlatılıyor (en iyi tweetler çekilecek)...')
     try {
       const job = await startDeepAnalysis(clean, { minFaves: 50, language: 'tr', resultsLimit: 200 })
-      setDeepProgress(`Extraction calisiyor (job: ${job.id})...`)
+      setDeepProgress(`Extraction çalışıyor (job: ${job.id})...`)
 
       // 3. Poll until complete
       let status = 'running'
@@ -119,19 +119,19 @@ export default function StyleClone() {
         const check = await getExtractionJob(job.id)
         status = check.job.status
         if (status === 'completed') {
-          setDeepProgress(`${check.job.totalResults} tweet bulundu, filtreleniyor...`)
+          setDeepProgress(`${check.job.totalResults} tweet bulundu, filtreleniyor…`)
         } else if (status === 'failed') {
-          throw new Error('Extraction basarisiz oldu')
+          throw new Error('Extraction başarısız oldu')
         }
         attempts++
       }
 
-      if (status !== 'completed') throw new Error('Extraction zaman asimina ugradi')
+      if (status !== 'completed') throw new Error('Extraction zaman aşımına uğradı')
 
       // 4. Get all results and save as curated style
       const allTweets = await getAllExtractionResults(job.id)
       const filtered = allTweets.filter(t => !t.tweetText.startsWith('@') && t.tweetText.length > 30)
-      setDeepProgress(`${filtered.length} kaliteli tweet filtrelendi, stil kaydediliyor...`)
+      setDeepProgress(`${filtered.length} kaliteli tweet filtrelendi, stil kaydediliyor…`)
 
       const style = await saveCuratedStyle(clean, allTweets)
       setCurrentStyle(style)
@@ -143,7 +143,7 @@ export default function StyleClone() {
       // 6. Auto-setup monitor if not exists
       const hasMonitor = monitors.some(m => m.xUsername === clean)
       if (!hasMonitor) {
-        setDeepProgress('Canli takip (monitor) ayarlaniyor...')
+        setDeepProgress('Canlı takip (monitor) ayarlanıyor...')
         try {
           const monitor = await createMonitor(clean)
           setMonitors(prev => [...prev, monitor])
@@ -164,13 +164,13 @@ export default function StyleClone() {
       setDeepProgress(null)
     } catch (e: any) {
       // Fallback: try basic analysis if extraction fails (e.g. no subscription)
-      setDeepProgress('Extraction kullanilamadi, basit analiz deneniyor...')
+      setDeepProgress('Extraction kullanılamadı, basit analiz deneniyor…')
       try {
         const style = await analyzeStyle(clean)
         setCurrentStyle(style)
         listStyles().then(res => setStyles(res.styles || [])).catch(() => {})
       } catch (e2: any) {
-        setError(e2.message || e.message || 'Analiz basarisiz')
+        setError(e2.message || e.message || 'Analiz başarısız')
       }
       setDeepProgress(null)
     }
@@ -207,7 +207,7 @@ export default function StyleClone() {
       setQuoteTweetText(tweet.text || '')
       setQuoteTweetAuthor(tweet.author?.username || '')
     } catch (e: any) {
-      setError('Tweet bulunamadi: ' + e.message)
+      setError('Tweet bulunamadı:' + e.message)
     }
   }
 
@@ -245,7 +245,7 @@ export default function StyleClone() {
       const passing = result.tweets.find(t => t.score?.passed)
       if (passing) setComposeDraft(passing.tweet)
     } catch (e: any) {
-      setError(e.message || 'Tweet uretimi basarisiz')
+      setError(e.message || 'Tweet üretimi başarısız')
     }
     setGenerating(false)
   }
@@ -619,7 +619,7 @@ export default function StyleClone() {
                           </div>
                           <div className="text-[10px] text-slate-400">
                             {style.tweetCount} tweet
-                            {(() => { const le = library.find(e => e.username === style.xUsername); return le?.generatedCount ? ` · ${le.generatedCount} uretim` : '' })()}
+                            {(() => { const le = library.find(e => e.username === style.xUsername); return le?.generatedCount ? ` · ${le.generatedCount} üretim` : '' })()}
                           </div>
                         </div>
                       </div>
@@ -632,7 +632,7 @@ export default function StyleClone() {
                                 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10'
                                 : 'text-slate-400'
                             }`}
-                            title={monitors.some(m => m.xUsername === style.xUsername) ? 'Canli takip aktif' : 'Canli takibi ac'}
+                            title={monitors.some(m => m.xUsername === style.xUsername) ? 'Canlı takip aktif' : 'Canlı takibi aç'}
                           >
                             {monitors.some(m => m.xUsername === style.xUsername) ? 'CANLI' : 'Takip'}
                           </button>
@@ -692,13 +692,13 @@ export default function StyleClone() {
 
                 {/* Style selector */}
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 tracking-wider block mb-1.5">KLONLANACAK STIL</label>
+                  <label className="text-[10px] font-bold text-slate-400 tracking-wider block mb-1.5">KLONLANACAK STİL</label>
                   <select
                     value={composeStyle}
                     onChange={e => setComposeStyle(e.target.value)}
                     className="w-full input-field px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
                   >
-                    <option value="">Stil sec...</option>
+                    <option value="">Stil seç...</option>
                     {styles.map(s => (
                       <option key={s.xUsername} value={s.xUsername}>@{s.xUsername} ({s.tweetCount} tweet)</option>
                     ))}
@@ -719,7 +719,7 @@ export default function StyleClone() {
                         placeholder="Tweet URL yapistir..."
                         className="flex-1 input-field px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
                       />
-                      <button onClick={handleFetchQuoteTweet} className="btn text-xs px-3">Cek</button>
+                      <button onClick={handleFetchQuoteTweet} className="btn text-xs px-3">Çek</button>
                     </div>
                     {quoteTweetText && (
                       <div className="mt-2 p-3 bg-slate-50 dark:bg-white/[0.03] rounded-lg border border-slate-100 dark:border-white/[0.06] text-xs text-slate-500 dark:text-slate-400">
@@ -739,7 +739,7 @@ export default function StyleClone() {
                         disabled={loadingTopics}
                         className="text-[10px] text-blue-500 hover:text-blue-600 dark:text-blue-400 transition-colors"
                       >
-                        {loadingTopics ? 'Yukleniyor...' : 'Konu oner'}
+                        {loadingTopics ? 'Yükleniyor...' : 'Konu öner'}
                       </button>
                     </div>
                     <input
@@ -778,8 +778,8 @@ export default function StyleClone() {
                       className="w-full input-field px-2 py-2 text-xs text-slate-700 dark:text-slate-200">
                       <option value="duygusal, umut dolu">Umutlu</option>
                       <option value="sarkastik, keskin">Sarkastik</option>
-                      <option value="ofkeli, isyankar">Ofkeli</option>
-                      <option value="siirsel, duygusal">Siirsel</option>
+                      <option value="ofkeli, isyankar">Öfkeli</option>
+                      <option value="siirsel, duygusal">Şiirsel</option>
                       <option value="samimi, sokak agzi">Samimi</option>
                       <option value="ciddi, resmi">Resmi</option>
                     </select>
@@ -788,8 +788,8 @@ export default function StyleClone() {
                     <label className="text-[10px] font-bold text-slate-400 tracking-wider block mb-1.5">HEDEF</label>
                     <select value={composeGoal} onChange={e => setComposeGoal(e.target.value)}
                       className="w-full input-field px-2 py-2 text-xs text-slate-700 dark:text-slate-200">
-                      <option value="engagement">Etkilesim</option>
-                      <option value="followers">Takipci</option>
+                      <option value="engagement">Etkileşim</option>
+                      <option value="followers">Takipçi</option>
                       <option value="authority">Otorite</option>
                       <option value="conversation">Sohbet</option>
                     </select>
@@ -818,7 +818,7 @@ export default function StyleClone() {
                     <div className="flex gap-1.5">
                       {[
                         { value: '', label: 'Otomatik' },
-                        { value: 'kisa', label: 'Kisa' },
+                        { value: 'kisa', label: 'Kısa' },
                         { value: 'normal', label: 'Normal' },
                         { value: 'uzun', label: 'Uzun' },
                       ].map(f => (
@@ -838,7 +838,7 @@ export default function StyleClone() {
                   </div>
                 )}
                 <div className="flex items-center justify-between py-2">
-                  <label className="text-[10px] font-bold text-slate-400 tracking-wider">URETIM MODU</label>
+                  <label className="text-[10px] font-bold text-slate-400 tracking-wider">ÜRETİM MODU</label>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setCloneMode(true)}
@@ -868,7 +868,7 @@ export default function StyleClone() {
                     disabled={loading || !composeTopic.trim() || !composeStyle}
                     className="btn w-full justify-center disabled:opacity-50 text-xs"
                   >
-                    {loading ? 'Rehber...' : 'Rehber Al'}
+                    {loading ? 'Rehber...' : 'Rehber al'}
                   </button>
                   <button
                     onClick={handleAutoGenerate}
@@ -878,9 +878,9 @@ export default function StyleClone() {
                     {generating ? (
                       <span className="flex items-center gap-1.5">
                         <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" /><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" className="opacity-75" /></svg>
-                        Uretiyor...
+                        Üretiyor...
                       </span>
-                    ) : 'Otomatik Uret'}
+                    ) : 'Otomatik Üret'}
                   </button>
                 </div>
               </div>
@@ -994,7 +994,7 @@ export default function StyleClone() {
             {generatedTweets.length > 0 && (
               <div className="card p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-[10px] font-bold text-slate-400 tracking-widest">URETILEN TWEETLER</div>
+                  <div className="text-[10px] font-bold text-slate-400 tracking-widest">ÜRETİLEN TWEETLER</div>
                   <span className={`text-[10px] px-2 py-0.5 rounded-lg ${
                     cloneMode
                       ? 'bg-brand-red/10 text-brand-red'
@@ -1039,7 +1039,7 @@ export default function StyleClone() {
                               onClick={() => setComposeDraft(gt.tweet)}
                               className="btn text-[10px] py-1 px-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10"
                             >
-                              Duzenle
+                              Düzenle
                             </button>
                           </div>
                         </div>
