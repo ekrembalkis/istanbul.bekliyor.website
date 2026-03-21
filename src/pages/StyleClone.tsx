@@ -934,16 +934,34 @@ export default function StyleClone() {
             {generatedTweets.length > 0 && (
               <div className="card p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-[10px] font-bold text-slate-400 tracking-widest">ÜRETİLEN TWEETLER</div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-lg ${
-                    cloneMode
-                      ? 'bg-brand-red/10 text-brand-red'
-                      : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                  }`}>
-                    {cloneMode ? 'Birebir Klon' : 'Optimize'}
-                  </span>
+                  <div className="text-[10px] font-bold text-slate-400 tracking-widest">
+                    {composeMode === 'thread' ? `THREAD — ${generatedTweets.length} TWEET` : 'ÜRETİLEN TWEETLER'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {composeMode === 'thread' && generatedTweets.length > 1 && (
+                      <CopyBtn
+                        text={generatedTweets.map((gt, i) => `${i + 1}/ ${gt.tweet}`).join('\n\n')}
+                        label="Tümünü Kopyala"
+                      />
+                    )}
+                    <span className={`text-[10px] px-2 py-0.5 rounded-lg ${
+                      cloneMode
+                        ? 'bg-brand-red/10 text-brand-red'
+                        : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                    }`}>
+                      {cloneMode ? 'Birebir Klon' : 'Optimize'}
+                    </span>
+                  </div>
                 </div>
-                <div className="space-y-3">
+
+                {/* Thread mode: connected chain visual */}
+                {composeMode === 'thread' && (
+                  <div className="text-[10px] text-slate-400 mb-3 flex items-center gap-1.5">
+                    <span>↳</span> Her tweet öncekine reply olarak atılır (self-reply zinciri)
+                  </div>
+                )}
+
+                <div className={composeMode === 'thread' ? 'space-y-0' : 'space-y-3'}>
                   {generatedTweets.map((gt, i) => {
                     // In clone mode: if only CTA failed, treat as "style pass"
                     const hasStyleOverride = (gt.styleOverrides?.length ?? 0) > 0
@@ -951,37 +969,60 @@ export default function StyleClone() {
                       ? gt.score.checklist?.filter(c => !c.passed).every(c => c.factor.includes('CTA'))
                       : false
                     const displayPassed = gt.score?.passed || isStylePass
+                    const isThread = composeMode === 'thread'
 
                     return (
-                      <div key={i} className={`p-4 rounded-xl border ${
-                        displayPassed
-                          ? 'bg-emerald-50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20'
-                          : 'bg-slate-50 dark:bg-white/[0.03] border-slate-100 dark:border-white/[0.06]'
-                      }`}>
-                        <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-line">{gt.tweet}</p>
-                        <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {gt.score && (
-                              <span className={`text-[10px] font-bold ${displayPassed ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                                {gt.score.count}/{gt.score.total}
-                              </span>
-                            )}
-                            {isStylePass && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-400">
-                                stil uyumu
-                              </span>
-                            )}
-                            <span className="text-[10px] text-slate-400">{gt.tweet.length} chr</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <CopyBtn text={gt.tweet} />
-                          </div>
-                        </div>
-                        {hasStyleOverride && (
-                          <div className="mt-2 text-[10px] text-slate-400 italic">
-                            {gt.styleOverrides?.join(' · ')}
-                          </div>
+                      <div key={i} className={`relative ${isThread ? 'pl-8' : ''}`}>
+                        {/* Thread chain line + number */}
+                        {isThread && (
+                          <>
+                            <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-200 dark:bg-white/[0.08]" />
+                            <div className={`absolute left-0 top-4 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold z-10 ${
+                              i === 0
+                                ? 'bg-brand-red text-white'
+                                : displayPassed
+                                  ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30'
+                                  : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/[0.1]'
+                            }`}>
+                              {i + 1}
+                            </div>
+                          </>
                         )}
+                        <div className={`${isThread ? 'py-3' : ''} ${!isThread ? `p-4 rounded-xl border ${
+                          displayPassed
+                            ? 'bg-emerald-50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20'
+                            : 'bg-slate-50 dark:bg-white/[0.03] border-slate-100 dark:border-white/[0.06]'
+                        }` : ''}`}>
+                          <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-line">{gt.tweet}</p>
+                          <div className="flex items-center justify-between mt-1.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {gt.score && (
+                                <span className={`text-[10px] font-bold ${displayPassed ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                  {gt.score.count}/{gt.score.total}
+                                </span>
+                              )}
+                              {isStylePass && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-400">
+                                  stil uyumu
+                                </span>
+                              )}
+                              <span className="text-[10px] text-slate-400">{gt.tweet.length} chr</span>
+                              {isThread && i === 0 && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-brand-red/10 text-brand-red font-medium">
+                                  hook
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <CopyBtn text={gt.tweet} />
+                            </div>
+                          </div>
+                          {hasStyleOverride && (
+                            <div className="mt-1.5 text-[10px] text-slate-400 italic">
+                              {gt.styleOverrides?.join(' · ')}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )
                   })}

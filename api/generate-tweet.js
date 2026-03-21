@@ -70,9 +70,11 @@ export default async function handler(req, res) {
       ctaRule = 'Soru isareti ile bitir ki yorum gelsin'
     }
 
-    // Length rule — aggressive enforcement
+    // Length rule — aggressive enforcement (thread mode has its own length rules in prompt)
     let lengthBlock
-    if (lengthHint === 'kisa') {
+    if (mode === 'thread') {
+      lengthBlock = '' // Thread prompt handles its own character limits (80-220)
+    } else if (lengthHint === 'kisa') {
       lengthBlock = '\n!!! KRITIK UZUNLUK KURALI !!!\nHer tweet MUTLAKA 60 ile 120 karakter arasinda olmali. 60dan KISA tweet KABUL EDILMEZ. Gerekirse iki cumle yaz.'
     } else if (lengthHint === 'uzun') {
       lengthBlock = '\n!!! KRITIK UZUNLUK KURALI !!!\nHer tweet MUTLAKA 200 ile 270 karakter arasinda olmali. 200den KISA tweet KABUL EDILMEZ. 280i GECME. Gerekirse 3-4 cumle yaz, detay ekle, ama stili koru.'
@@ -114,20 +116,32 @@ ONEMLI: Her reply EN AZ 50 karakter olmali. Cok kisa bos laflar yazma (ornegin s
 
 ${count} farkli reply yaz. Her birini yeni satirda numara ile yaz.`
     } else if (mode === 'thread') {
-      modeInstruction = `BU KONUDA 4-8 TWEET'LIK THREAD YAZ.
+      // Thread = self-reply zinciri. Her tweet bagimsiz skorlanir.
+      // Algoritma: conversation dedup ile sadece en iyi tweet gosterilir, ilk tweet EN kritik.
+      const threadCtaRule = (cloneMode && !styleUsesQuestion)
+        ? 'Soru isareti KULLANMA. Stile sadik kal.'
+        : 'Thread boyunca 1-2 yerde soru kullan, her tweette degil.'
+      modeInstruction = `BU KONUDA 5-7 TWEET'LIK THREAD (self-reply zinciri) YAZ.
 
 KONU: ${topic}
 ${topicContext ? `\nGUNDEM BAGLAMI:\n${topicContext}\n` : ''}
 TON: ${tone}
 
-Thread kurallari:
-- Ilk tweet hook olmali (dikkat cekici giris)
-- Her tweet kendi basina da anlamli olmali
-- Son tweet guclu kapaniis + soru
-- Her tweet 50-250 karakter
-- Thread akisi mantikli, birbirini takip etsin
+KRITIK — X ALGORITMASI THREAD KURALLARI:
+- Thread = her tweet oncekine REPLY olarak atilir (self-reply zinciri)
+- Algoritma HER TWEET'I BAGIMSIZ skorlar, thread bonusu YOKTUR
+- Conversation dedup: ayni thread'den sadece EN YUKSEK skorlu tweet For You'da gosterilir
+- Bu yuzden HER TWEET tek basina guclu olmali
 
-Sadece tweet metinlerini yaz. Her tweeti "1/" "2/" gibi numara ile baslat.`
+YAPI:
+- 1. tweet: EN ONEMLI — hook, dikkat cekici, tek basina viral olabilecek guc
+- 2-5. tweetler: her biri kendi basina anlamli, bagimsiz deger veren icerik
+- Son tweet: guclu kapaniis, ozet veya cagri
+- ${threadCtaRule}
+- Her tweet 80-220 karakter arasi (cok kisa olmasin, substance olmali)
+- Thread akisi mantikli ama her tweet tek basina okunabilir olmali
+
+Her tweeti "1/" "2/" gibi numara ile baslat. Sadece tweet metinlerini yaz.`
     } else {
       modeInstruction = `KONU: ${topic}
 ${topicContext ? `\nGUNDEM BAGLAMI (bu konu hakkinda simdi X'te konusulanlar):\n${topicContext}\n\nYukaridaki baglamdan ilham al ama KOPYALAMA. Kendi stilinde yeni icerik uret.\n` : ''}
@@ -160,7 +174,7 @@ ${modeInstruction}`
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.85, maxOutputTokens: 800 },
+          generationConfig: { temperature: 0.85, maxOutputTokens: mode === 'thread' ? 1600 : 800 },
         }),
       }
     )
@@ -190,22 +204,15 @@ ${modeInstruction}`
       return res.status(500).json({ error: 'Generation failed', raw: rawText })
     }
 
-    // 6. Score tweets (thread mode: score only last tweet)
+    // 6. Score tweets (thread mode: score ALL tweets independently — algorithm scores each one)
     const results = []
     const tweetsToProcess = mode === 'thread' ? tweets : tweets.slice(0, count)
     for (let idx = 0; idx < tweetsToProcess.length; idx++) {
       const tweet = tweetsToProcess[idx]
-      const isThreadNonLast = mode === 'thread' && idx < tweetsToProcess.length - 1
       let currentDraft = tweet
       let scoreData = null
       let attempts = 0
       const tweetOverrides = [...styleOverrides]
-
-      // Thread: skip scoring for non-last tweets
-      if (isThreadNonLast) {
-        results.push({ tweet: currentDraft, score: null, attempts: 0, styleOverrides: tweetOverrides })
-        continue
-      }
 
       while (attempts < 3) {
         attempts++
