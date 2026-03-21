@@ -31,15 +31,28 @@ function getCampaignTopic(): TopicSuggestion {
   }
 }
 
+export const TOPIC_CATEGORIES = [
+  { key: 'siyaset', label: 'Siyaset' },
+  { key: 'gundem', label: 'Gündem' },
+  { key: 'ekonomi', label: 'Ekonomi' },
+  { key: 'teknoloji', label: 'Teknoloji' },
+  { key: 'spor', label: 'Spor' },
+  { key: 'bilim', label: 'Bilim' },
+  { key: 'kultur', label: 'Kültür' },
+] as const
+
+export type TopicCategory = typeof TOPIC_CATEGORIES[number]['key']
+
 export async function getTopicSuggestions(
   _apiFn: unknown,
   _currentStyle: StyleProfile | null,
+  category: TopicCategory = 'siyaset',
 ): Promise<TopicSuggestion[]> {
   const campaign = getCampaignTopic()
 
-  // Fetch live topics from serverless endpoint (Gemini + X Search)
+  // Fetch live topics from serverless endpoint (Radar + X Search + Gemini)
   try {
-    const res = await fetch('/api/extract-topics')
+    const res = await fetch(`/api/extract-topics?category=${category}`)
     if (res.ok) {
       const data = await res.json()
       const live: TopicSuggestion[] = (data.topics || []).map((t: TopicSuggestion) => ({

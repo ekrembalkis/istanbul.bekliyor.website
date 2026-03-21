@@ -11,8 +11,8 @@ import {
 import type { StyleProfile, XUser, Draft, ScoreResult, ComposeRefineResult, Monitor, GeneratedTweet } from '../lib/xquik'
 import { getLibrary, saveEntry, togglePin, incrementGenerated, addTopic, CATEGORIES } from '../lib/styleLibrary'
 import type { StyleLibraryEntry } from '../lib/styleLibrary'
-import { getTopicSuggestions } from '../lib/topicSuggestor'
-import type { TopicSuggestion } from '../lib/topicSuggestor'
+import { getTopicSuggestions, TOPIC_CATEGORIES } from '../lib/topicSuggestor'
+import type { TopicSuggestion, TopicCategory } from '../lib/topicSuggestor'
 import { trackGeminiUsage } from '../lib/costTracker'
 import { checkCampaignRules, getScoreColor, getScoreBg } from '../lib/utils'
 import { scoreDraft } from '../lib/xquik'
@@ -48,6 +48,7 @@ export default function StyleClone() {
   const [topicContext, setTopicContext] = useState('')
   const [loadingTopics, setLoadingTopics] = useState(false)
   const [expandedTopic, setExpandedTopic] = useState<number | null>(null)
+  const [topicCategory, setTopicCategory] = useState<TopicCategory>('siyaset')
 
   // ── Check (inline algorithm checker) ──
   const [checkText, setCheckText] = useState('')
@@ -266,7 +267,7 @@ export default function StyleClone() {
   const loadTopicSuggestions = async () => {
     setLoadingTopics(true)
     try {
-      const suggestions = await getTopicSuggestions(null, currentStyle)
+      const suggestions = await getTopicSuggestions(null, currentStyle, topicCategory)
       setTopicSuggestions(suggestions)
     } catch { /* optional */ }
     setLoadingTopics(false)
@@ -758,13 +759,30 @@ export default function StyleClone() {
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <label className="text-[10px] font-bold text-slate-400 tracking-wider">KONU</label>
-                      <button
-                        onClick={loadTopicSuggestions}
-                        disabled={loadingTopics}
-                        className="text-[10px] text-blue-500 hover:text-blue-600 dark:text-blue-400 transition-colors"
-                      >
-                        {loadingTopics ? 'Yükleniyor...' : 'Konu öner'}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-0.5 bg-slate-100 dark:bg-white/[0.04] rounded-md p-0.5">
+                          {TOPIC_CATEGORIES.map(cat => (
+                            <button
+                              key={cat.key}
+                              onClick={() => { setTopicCategory(cat.key); setTopicSuggestions([]); setExpandedTopic(null) }}
+                              className={`text-[9px] px-1.5 py-0.5 rounded transition-all ${
+                                topicCategory === cat.key
+                                  ? 'bg-white dark:bg-dark-card text-slate-700 dark:text-white shadow-sm font-medium'
+                                  : 'text-slate-400 hover:text-slate-600'
+                              }`}
+                            >
+                              {cat.label}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={loadTopicSuggestions}
+                          disabled={loadingTopics}
+                          className="text-[10px] text-blue-500 hover:text-blue-600 dark:text-blue-400 transition-colors"
+                        >
+                          {loadingTopics ? 'Yükleniyor...' : 'Öner'}
+                        </button>
+                      </div>
                     </div>
                     <input
                       type="text"
