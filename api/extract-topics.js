@@ -101,12 +101,24 @@ export default async function handler(req, res) {
         ? Math.max(...relatedTweets.map(t => t.likeCount || 0))
         : 0
 
+      // Include top tweets with engagement data for preview cards
+      const topTweets = relatedTweets
+        .sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
+        .slice(0, 3)
+        .map(t => ({
+          text: t.text.replace(/https?:\/\/\S+/g, '').trim(),
+          likeCount: t.likeCount || 0,
+          retweetCount: t.retweetCount || 0,
+          author: t.author?.username || t.username || '',
+        }))
+
       return {
         title,
         source: 'live',
         relevance: Math.min(95, 60 + Math.round(bestLikes / 500)),
         reason: `${relatedTweets.length} tweet · ${bestLikes.toLocaleString()} begeni`,
         context,
+        tweets: topTweets,
       }
     })
 

@@ -4,12 +4,20 @@ import { getDayPlan } from '../data/campaign'
 import { getDayCount } from './utils'
 import type { StyleProfile } from './xquik'
 
+export interface TopicTweet {
+  text: string
+  likeCount: number
+  retweetCount: number
+  author: string
+}
+
 export interface TopicSuggestion {
   title: string
   source: 'live' | 'campaign'
   relevance: number
   reason: string
   context?: string
+  tweets?: TopicTweet[]
 }
 
 function getCampaignTopic(): TopicSuggestion {

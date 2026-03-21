@@ -44,6 +44,7 @@ export default function StyleClone() {
   const [topicSuggestions, setTopicSuggestions] = useState<TopicSuggestion[]>([])
   const [topicContext, setTopicContext] = useState('')
   const [loadingTopics, setLoadingTopics] = useState(false)
+  const [expandedTopic, setExpandedTopic] = useState<number | null>(null)
 
   // ── Manual ──
   const [manualTweets, setManualTweets] = useState('')
@@ -749,21 +750,54 @@ export default function StyleClone() {
                       className="w-full input-field px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
                     />
                     {topicSuggestions.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {topicSuggestions.map((s, i) => (
-                          <button
-                            key={i}
-                            onClick={() => { setComposeTopic(s.title); setTopicContext(s.context || '') }}
-                            className={`text-[10px] px-2 py-1 rounded-lg border transition-all hover:scale-105 ${
-                              s.source === 'campaign' ? 'bg-brand-red/10 text-brand-red border-brand-red/20' :
-                              s.source === 'live' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20' :
-                              'bg-slate-50 dark:bg-white/[0.04] text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/[0.08]'
-                            }`}
-                            title={s.reason}
-                          >
-                            {s.title}
-                          </button>
-                        ))}
+                      <div className="space-y-1.5 mt-2">
+                        <div className="flex flex-wrap gap-1.5">
+                          {topicSuggestions.map((s, i) => (
+                            <button
+                              key={i}
+                              onClick={() => { setComposeTopic(s.title); setTopicContext(s.context || ''); setExpandedTopic(null) }}
+                              className={`text-[10px] px-2 py-1 rounded-lg border transition-all hover:scale-105 ${
+                                composeTopic === s.title ? 'ring-2 ring-offset-1 dark:ring-offset-dark-bg ' : ''
+                              }${
+                                s.source === 'campaign' ? 'bg-brand-red/10 text-brand-red border-brand-red/20' :
+                                s.source === 'live' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20' :
+                                'bg-slate-50 dark:bg-white/[0.04] text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/[0.08]'
+                              }`}
+                              title={s.reason}
+                            >
+                              {s.title}
+                              {s.tweets && s.tweets.length > 0 && (
+                                <span
+                                  className="ml-1 opacity-60 hover:opacity-100"
+                                  onClick={(e) => { e.stopPropagation(); setExpandedTopic(expandedTopic === i ? null : i) }}
+                                >
+                                  ▾
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                        {/* Expanded topic tweet cards */}
+                        {expandedTopic !== null && topicSuggestions[expandedTopic]?.tweets && topicSuggestions[expandedTopic].tweets!.length > 0 && (
+                          <div className="bg-slate-50 dark:bg-white/[0.02] rounded-xl border border-slate-100 dark:border-white/[0.06] p-3 space-y-2 animate-fade-in">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-slate-400 tracking-wider">
+                                {topicSuggestions[expandedTopic].title}
+                              </span>
+                              <button onClick={() => setExpandedTopic(null)} className="text-slate-400 hover:text-slate-600 text-xs">✕</button>
+                            </div>
+                            {topicSuggestions[expandedTopic].tweets!.map((tw, ti) => (
+                              <div key={ti} className="bg-white dark:bg-dark-card rounded-lg p-3 border border-slate-100 dark:border-white/[0.06]">
+                                <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">{tw.text}</p>
+                                <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-400">
+                                  {tw.author && <span className="font-medium">@{tw.author}</span>}
+                                  <span className="flex items-center gap-0.5">♥ {tw.likeCount.toLocaleString()}</span>
+                                  {tw.retweetCount > 0 && <span className="flex items-center gap-0.5">↻ {tw.retweetCount.toLocaleString()}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
