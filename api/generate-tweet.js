@@ -121,27 +121,26 @@ ${count} farkli reply yaz. Her birini yeni satirda numara ile yaz.`
       const threadCtaRule = (cloneMode && !styleUsesQuestion)
         ? 'Soru isareti KULLANMA. Stile sadik kal.'
         : 'Thread boyunca 1-2 yerde soru kullan, her tweette degil.'
-      modeInstruction = `BU KONUDA 5-7 TWEET'LIK THREAD (self-reply zinciri) YAZ.
+      modeInstruction = `BU KONUDA 5 TWEET'LIK THREAD (self-reply zinciri) YAZ.
 
 KONU: ${topic}
 ${topicContext ? `\nGUNDEM BAGLAMI:\n${topicContext}\n` : ''}
 TON: ${tone}
 
-KRITIK — X ALGORITMASI THREAD KURALLARI:
-- Thread = her tweet oncekine REPLY olarak atilir (self-reply zinciri)
-- Algoritma HER TWEET'I BAGIMSIZ skorlar, thread bonusu YOKTUR
-- Conversation dedup: ayni thread'den sadece EN YUKSEK skorlu tweet For You'da gosterilir
-- Bu yuzden HER TWEET tek basina guclu olmali
+THREAD YAPISI (her tweet oncekine REPLY olarak atilir):
+1. tweet — HOOK: Sarsici, provokatif veya surpriz acilis. Okuyucu "devamini okumam lazim" demeli. Soru, itiraf, carpici istatistik veya cesur iddia ile basla.
+2. tweet — BAGLAM: Durumu acikla, olayi veya problemi ortaya koy. Somut detay ver (tarih, yer, isim, rakam).
+3. tweet — DERINLIK: Herkesin gormezden geldigi aciyi goster. Farkli bir perspektif sun. "Ama asil mesele su:" gibi gecis yap.
+4. tweet — KANIT/DUYGU: Kisisel gozlem, somut ornek veya duygusal vurucu bir cumle. Soyut konusma, somut anlat.
+5. tweet — KAPANIIS: Guclu son cumle. ${threadCtaRule}
 
-YAPI:
-- 1. tweet: EN ONEMLI — hook, dikkat cekici, tek basina viral olabilecek guc
-- 2-5. tweetler: her biri kendi basina anlamli, bagimsiz deger veren icerik
-- Son tweet: guclu kapaniis, ozet veya cagri
-- ${threadCtaRule}
-- Her tweet 80-220 karakter arasi (cok kisa olmasin, substance olmali)
-- Thread akisi mantikli ama her tweet tek basina okunabilir olmali
+KURALLAR:
+- HER tweet tek basina okunsa bile anlamli ve guclu olmali (algoritma her birini BAGIMSIZ skorlar)
+- Her tweet FARKLI aci, farkli yaklasim — ayni kaliplari tekrarlama
+- 80-220 karakter arasi
+- Klise, slogan ve bos motivasyon cumleleri YASAK (somut ol)
 
-Her tweeti "1/" "2/" gibi numara ile baslat. Sadece tweet metinlerini yaz.`
+SADECE 5 tweet yaz. Her tweeti "1/" "2/" gibi numara ile baslat. Baska hicbir sey yazma.`
     } else {
       modeInstruction = `KONU: ${topic}
 ${topicContext ? `\nGUNDEM BAGLAMI (bu konu hakkinda simdi X'te konusulanlar):\n${topicContext}\n\nYukaridaki baglamdan ilham al ama KOPYALAMA. Kendi stilinde yeni icerik uret.\n` : ''}
