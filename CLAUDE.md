@@ -112,49 +112,25 @@ Font: sistem fontları (başlıklar bold, gövde regular). Panel dark mode.
 - `prompts/daily-prompts.md` — İlk 14 günün Nano Banana Pro promptları ve tweet metinleri
 - `prompts/profile-banner.md` — Profil fotoğrafı ve banner promptları
 
-## X Algoritması Kritik Bilgiler (Hızlı Referans)
+## X Algoritması
 
-Kaynak: X'in açık kaynak kodu (x-algorithm-main repo, Ocak 2026)
+Kaynak: x-algorithm-main (2026, Grok-based transformer)
 
-### Engagement Ağırlıkları (Phoenix Grok Transformer)
-- Pozitif: favorite, reply, repost, quote, click, profile_click, video_view, photo_expand, share, share_via_dm, share_via_copy_link, dwell, follow_author
-- Negatif: not_interested, block_author, mute_author, report
-- Final Skor = Σ(weight_i × P(action_i))
-- Gerçek ağırlık değerleri params dosyasında, açık kaynak sürümünden çıkarılmış
+### Dogrulanmis (kaynak koddan)
+- 19 Phoenix sinyali: favorite, reply, repost, quote, click, profile_click, vqv, photo_expand, share, share_via_dm, share_via_copy_link, dwell, dwell_time, follow_author, not_interested, block_author, mute_author, report
+- Sabit agirlik YOKTUR — transformer ogreniyor
+- Candidate isolation: tweetler birbirini gormez (self-attention only)
 
-### Author Diversity Scorer
-- Aynı yazardan ardışık içerikler üstel decay ile cezalandırılır
-- Formül: multiplier = (1 − floor) × decay^position + floor
-- Günde 2 veya 3 tweet optimal
+### Algoritma Kontrolleri
+Algoritma skorlama Xquik compose API uzerinden CANLI yapilir (11 kontrol).
+Lokal hardcoded kurallar kaldirildi — src/lib/algorithmData.ts 24 saat cache ile Xquik'ten ceker.
 
-### OON Weight Factor
-- Takip etmediğin hesaplardan gelen içerikler otomatik düşürülür
-- base_score × OON_WEIGHT_FACTOR
-
-### Tweet Format Kuralları
-1. ASLA dış link koyma (yüzde 30 ila 50 erişim cezası)
-2. Metin + görsel formatı kullan (metin yüzde 3.56, görsel yüzde 3.40 etkileşim oranı)
-3. İlk saat kritik (koordineli etkileşim penceresi)
-4. Her reply'a cevap ver (author engaged reply = en güçlü sinyal)
-5. Premium hesap kullan (yaklaşık 10x erişim farkı)
-6. Tek hashtag: #İstanbulBekliyor
-7. Tweet sonuna soru ekle (reply tetikler)
-8. Thread formatı 4 ila 8 tweet (conversation depth)
-
-### Algoritma Kontrol Kuralları (Panel İçin)
-
-```json
-[
-  {"rule": "no_links", "check": "tweet metninde http/https/www var mı", "type": "error", "message": "Link tespit edildi! Linkler yüzde 30 ila 50 erişim cezası alır. Linki ilk yanıta taşı."},
-  {"rule": "has_hashtag", "check": "#İstanbulBekliyor içeriyor mu", "type": "warning", "message": "#İstanbulBekliyor hashtag'i eksik."},
-  {"rule": "max_hashtags", "check": "2'den fazla hashtag var mı", "type": "warning", "message": "Çok fazla hashtag. 1 veya 2 yeterli."},
-  {"rule": "has_question", "check": "tweet soru işareti içeriyor mu", "type": "tip", "message": "Soru eklemek reply tetikler (en güçlü algoritmik sinyal)."},
-  {"rule": "length_check", "check": "140 ila 250 karakter arası mı", "type": "tip", "message": "Optimal tweet uzunluğu 140 ila 250 karakter."},
-  {"rule": "starts_with_day", "check": "'GÜN' ile başlıyor mu", "type": "warning", "message": "Tweet 'GÜN [sayı]' ile başlamalı (marka tutarlılığı)."},
-  {"rule": "no_mention", "check": "@ mention içeriyor mu", "type": "tip", "message": "İlk tweette mention koyma, erişimi daraltabilir."},
-  {"rule": "has_image_note", "check": "görsel eklenecek mi hatırlatması", "type": "warning", "message": "Bu tweete görsel eklemeyi unutma."}
-]
-```
+### Kampanya Kurallari (algoritma degil, marka kimligi)
+- Tweet "GUN [sayi]" ile baslar
+- #IstanbulBekliyor hashtag'i (tek hashtag, Xquik 0-1 hashtag'e izin veriyor)
+- Paylasim 09:00 TSI
+- 1:1 gorsel (siyah/beyaz + altin)
+- checkCampaignRules() ile kontrol edilir (src/lib/utils.ts)
 
 ## Nano Banana Pro Görsel Üretim Kuralları
 

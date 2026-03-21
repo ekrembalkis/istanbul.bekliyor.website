@@ -138,16 +138,29 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Quick Reminders */}
+          {/* Algorithm Rules */}
           <div className="card p-6">
-            <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-3">Hızlı Hatırlatma</h2>
-            <div className="grid grid-cols-1 gap-2.5 text-sm text-slate-500 dark:text-slate-400">
-              <div className="flex gap-2.5 items-start"><span className="text-brand-red mt-0.5 text-xs font-bold">✕</span><span>Link koyma (ilk yanıta at)</span></div>
-              <div className="flex gap-2.5 items-start"><span className="text-emerald-500 mt-0.5 text-xs font-bold">✓</span><span>"GÜN {day}" ile başla</span></div>
-              <div className="flex gap-2.5 items-start"><span className="text-emerald-500 mt-0.5 text-xs font-bold">✓</span><span>Sonda soru sor (reply tetikler)</span></div>
-              <div className="flex gap-2.5 items-start"><span className="text-emerald-500 mt-0.5 text-xs font-bold">✓</span><span>Gelen reply'lara cevap ver (150× like)</span></div>
-              <div className="flex gap-2.5 items-start"><span className="text-emerald-500 mt-0.5 text-xs font-bold">✓</span><span>Sabah 09:00 TSİ'de paylaş</span></div>
-              <div className="flex gap-2.5 items-start"><span className="text-emerald-500 mt-0.5 text-xs font-bold">✓</span><span>#İstanbulBekliyor ekle</span></div>
+            <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">Algoritma</h2>
+            <p className="text-[10px] text-slate-400 mb-3">Xquik canli veri</p>
+            <div className="grid grid-cols-1 gap-2 text-sm text-slate-500 dark:text-slate-400">
+              <div className="flex gap-2.5 items-start"><span className="text-brand-red mt-0.5 text-xs font-bold">!</span><span>Link koyma, reply'a tasi</span></div>
+              <div className="flex gap-2.5 items-start"><span className="text-brand-red mt-0.5 text-xs font-bold">!</span><span>Emoji kullanma</span></div>
+              <div className="flex gap-2.5 items-start"><span className="text-brand-red mt-0.5 text-xs font-bold">!</span><span>Em dash / cift tire kullanma</span></div>
+              <div className="flex gap-2.5 items-start"><span className="text-emerald-500 mt-0.5 text-xs font-bold">+</span><span>Soru veya acik cumle ile bitir</span></div>
+              <div className="flex gap-2.5 items-start"><span className="text-emerald-500 mt-0.5 text-xs font-bold">+</span><span>Reply'lara hizlica cevap ver</span></div>
+              <div className="flex gap-2.5 items-start"><span className="text-emerald-500 mt-0.5 text-xs font-bold">+</span><span>Ilk 30 dakika aktif ol</span></div>
+            </div>
+          </div>
+
+          {/* Campaign Rules */}
+          <div className="card p-6">
+            <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">Kampanya</h2>
+            <p className="text-[10px] text-slate-400 mb-3">Marka kimligi kurallari</p>
+            <div className="grid grid-cols-1 gap-2 text-sm text-slate-500 dark:text-slate-400">
+              <div className="flex gap-2.5 items-start"><span className="text-emerald-500 mt-0.5 text-xs font-bold">+</span><span>"GUN {day}" ile basla</span></div>
+              <div className="flex gap-2.5 items-start"><span className="text-emerald-500 mt-0.5 text-xs font-bold">+</span><span>#IstanbulBekliyor ekle</span></div>
+              <div className="flex gap-2.5 items-start"><span className="text-emerald-500 mt-0.5 text-xs font-bold">+</span><span>09:00 TSI'de paylas</span></div>
+              <div className="flex gap-2.5 items-start"><span className="text-emerald-500 mt-0.5 text-xs font-bold">+</span><span>1:1 gorsel ekle (siyah/beyaz + altin)</span></div>
             </div>
           </div>
         </div>

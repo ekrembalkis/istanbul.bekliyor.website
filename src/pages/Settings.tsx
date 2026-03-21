@@ -110,23 +110,48 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Tweet Format Rules */}
+      {/* Campaign Rules */}
       <div className="card p-6">
-        <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-5 tracking-wider">TWEET FORMAT KURALLARI</h2>
+        <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 tracking-wider">KAMPANYA KURALLARI</h2>
+        <p className="text-[10px] text-slate-400 mb-4">Marka kimligi ve icerik formati</p>
         <div className="space-y-2.5 text-sm text-slate-500 dark:text-slate-400">
           {[
-            'Tweet her zaman "GÜN [SAYI]." ile başlar',
-            '2 ila 4 satır kısa, şiirsel metin',
-            'Sonda #İstanbulBekliyor hashtag\'i',
-            'ASLA dış link koyma',
-            'Her tweete 1:1 kare görsel ekle',
-            'Günde 1 ana tweet + gelen reply\'lara cevap',
-            'Paylaşım saati: 09:00 TSİ',
-            'Ton: yapıcı, umut dolu, asla saldırgan değil',
+            'Tweet her zaman "GUN [SAYI]." ile baslar',
+            '2-4 satir kisa, siirsel metin',
+            'Sonda #IstanbulBekliyor hashtag\'i (tek hashtag)',
+            'Her tweete 1:1 kare gorsel ekle (siyah/beyaz + altin)',
+            'Gunde 1 ana tweet + gelen reply\'lara cevap',
+            'Paylasim saati: 09:00 TSI',
+            'Ton: yapici, umut dolu, asla saldirgan degil',
           ].map((rule, i) => (
             <div key={i} className="flex gap-3 items-start p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors">
               <span className="w-6 h-6 rounded-md bg-brand-gold/10 text-brand-gold text-[10px] font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
               <span className="mt-0.5">{rule}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Algorithm Rules */}
+      <div className="card p-6">
+        <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 tracking-wider">ALGORITMA KURALLARI</h2>
+        <p className="text-[10px] text-slate-400 mb-4">Xquik canli veri — X algoritmasina gore</p>
+        <div className="space-y-2.5 text-sm text-slate-500 dark:text-slate-400">
+          {[
+            { text: 'Dis link koyma, reply\'a tasi', type: 'error' },
+            { text: 'Emoji kullanma', type: 'error' },
+            { text: 'Em dash / cift tire kullanma (AI tespiti)', type: 'error' },
+            { text: 'Soru veya acik cumle ile bitir (reply tetikler)', type: 'tip' },
+            { text: 'Reply\'lara hizla cevap ver (en guclu sinyal)', type: 'tip' },
+            { text: 'Ilk 30 dakikada aktif ol', type: 'tip' },
+            { text: 'Paylasima deger icerik yaz (DM ile paylasilabilir)', type: 'tip' },
+            { text: 'Gorsel ekle (photo_expand sinyali)', type: 'tip' },
+          ].map((rule, i) => (
+            <div key={i} className="flex gap-3 items-start p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors">
+              <span className={`w-6 h-6 rounded-md text-[10px] font-bold flex items-center justify-center flex-shrink-0 ${
+                rule.type === 'error' ? 'bg-red-50 dark:bg-red-500/10 text-red-500' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500'
+              }`}>{rule.type === 'error' ? '!' : '+'}</span>
+              <span className="mt-0.5">{rule.text}</span>
             </div>
           ))}
         </div>
