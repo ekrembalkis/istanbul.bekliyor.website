@@ -228,19 +228,7 @@ export default function StyleClone() {
   const loadTopicSuggestions = async () => {
     setLoadingTopics(true)
     try {
-      const searchFn = async (query: string) => {
-        const IS_DEV = import.meta.env.DEV
-        const path = `/x/tweets/search?q=${encodeURIComponent(query)}&limit=10&queryType=Top`
-        if (IS_DEV) {
-          const res = await fetch(`https://xquik.com/api/v1${path}`, {
-            headers: { 'x-api-key': import.meta.env.VITE_XQUIK_API_KEY || '' }
-          })
-          return res.json()
-        }
-        const res = await fetch(`/api/xquik?path=${encodeURIComponent(path)}`)
-        return res.json()
-      }
-      const suggestions = await getTopicSuggestions(null, currentStyle, searchFn)
+      const suggestions = await getTopicSuggestions(null, currentStyle)
       setTopicSuggestions(suggestions)
     } catch { /* optional */ }
     setLoadingTopics(false)

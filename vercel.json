@@ -4,6 +4,7 @@
     { "source": "/api/image-proxy", "destination": "/api/image-proxy" },
     { "source": "/api/style-webhook", "destination": "/api/style-webhook" },
     { "source": "/api/generate-tweet", "destination": "/api/generate-tweet" },
+    { "source": "/api/extract-topics", "destination": "/api/extract-topics" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
