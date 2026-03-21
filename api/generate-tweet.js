@@ -242,10 +242,12 @@ ${modeInstruction}`
           currentDraft = currentDraft.replace(/[.!,]?\s*$/, '') + '?'
         }
 
-        if (failed.includes('Optimal length (50-280 characters)') && currentDraft.length < 50) {
+        const minLength = mode === 'thread' ? 80 : 50
+        if (currentDraft.length < minLength) {
+          const targetRange = mode === 'thread' ? '80-180 karakter' : '60-120 karakter'
           const fixPrompt = cloneMode && !styleUsesQuestion
-            ? `Bu tweeti ayni stilde ama daha uzun yaz (60-120 karakter arasi). Stili koru. Soru isareti KULLANMA.\n\nOrijinal: "${currentDraft}"\n\nSadece yeni tweet metnini yaz.`
-            : `Bu tweeti ayni stilde ama daha uzun yaz (60-120 karakter arasi). Stili koru. Soru ile bitir.\n\nOrijinal: "${currentDraft}"\n\nSadece yeni tweet metnini yaz.`
+            ? `Bu tweeti ayni stilde ama daha uzun yaz (${targetRange} arasi). Stili koru. Soru isareti KULLANMA.\n\nOrijinal: "${currentDraft}"\n\nSadece yeni tweet metnini yaz.`
+            : `Bu tweeti ayni stilde ama daha uzun yaz (${targetRange} arasi). Stili koru. Soru ile bitir.\n\nOrijinal: "${currentDraft}"\n\nSadece yeni tweet metnini yaz.`
           const fixRes = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
             {
