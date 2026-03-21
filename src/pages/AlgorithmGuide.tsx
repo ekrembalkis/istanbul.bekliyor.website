@@ -1,124 +1,160 @@
-import { ALGORITHM_RULES } from '../data/campaign'
+import { useState, useEffect } from 'react'
+import { fetchAlgorithmData, isConfirmedSignal } from '../lib/algorithmData'
+import type { AlgorithmData } from '../lib/algorithmData'
 
 export default function AlgorithmGuide() {
+  const [data, setData] = useState<AlgorithmData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchAlgorithmData().then(d => { setData(d); setLoading(false) }).catch(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="space-y-8 animate-fade-in">
+        <div className="section-header">
+          <h1 className="text-2xl font-serif font-bold text-slate-800 dark:text-white">Algoritma Rehberi</h1>
+        </div>
+        <div className="card p-12 text-center text-sm text-slate-400">Algoritma verileri yukleniyor...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="section-header">
         <h1 className="text-2xl font-serif font-bold text-slate-800 dark:text-white">Algoritma Rehberi</h1>
-        <p className="text-sm text-slate-400 mt-1">X algoritmasının açık kaynak kodundan (Phoenix Grok transformer) elde edilen kurallar.</p>
+        <p className="text-sm text-slate-400 mt-1">X algoritmasinin kaynak kodundan ve Xquik analizinden elde edilen canli veriler.</p>
       </div>
 
-      <div className="space-y-3">
-        {ALGORITHM_RULES.map((rule, i) => (
-          <div key={i} className="card p-5 hover:shadow-card-hover dark:hover:shadow-dark-card-hover">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold text-slate-700 dark:text-slate-200">{rule.title}</h3>
-              <span className={`chip text-[10px] ${
-                rule.weight === 'KRİTİK' ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20' :
-                rule.weight === 'YÜKSEK' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20' :
-                'bg-slate-50 dark:bg-white/[0.04] text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10'
-              }`}>{rule.weight}</span>
-            </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{rule.content}</p>
-          </div>
-        ))}
-      </div>
+      {/* Source attribution */}
+      {data?.source && (
+        <div className="card p-4 bg-blue-50 dark:bg-blue-500/5 border-l-4 border-l-blue-500">
+          <div className="text-[10px] font-bold text-blue-500 tracking-wider mb-1">KAYNAK</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{data.source}</div>
+        </div>
+      )}
 
-      {/* Phoenix Scoring */}
-      <div className="card border-l-4 border-l-brand-gold p-6 bg-brand-gold-light dark:bg-brand-gold/5">
-        <h3 className="font-bold text-brand-gold text-lg font-serif mb-5">Phoenix Scoring Model</h3>
-        <div className="text-sm text-slate-500 dark:text-slate-400 space-y-4">
-          <div>
-            <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-2 tracking-wider">POZİTİF AKSİYONLAR</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed bg-white/60 dark:bg-white/[0.04] rounded-lg p-3">
-              favorite, reply, retweet, quote, click, profile_click, video_view, photo_expand, share, share_via_dm, share_via_copy_link, dwell, follow_author
-            </div>
-          </div>
-          <div>
-            <div className="text-xs font-bold text-red-500 dark:text-red-400 mb-2 tracking-wider">NEGATİF AKSİYONLAR</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed bg-white/60 dark:bg-white/[0.04] rounded-lg p-3">
-              not_interested, block_author, mute_author, report
-            </div>
-          </div>
-          <div className="bg-white dark:bg-dark-card rounded-xl p-4 font-mono text-xs text-brand-red border border-brand-gold/20 dark:border-brand-gold/15">
-            Final Score = Σ(weight_i × P(action_i)) × diversity_multiplier × oon_factor
-          </div>
-        </div>
-      </div>
-
-      {/* Engagement Weights */}
-      <div className="card p-6">
-        <div className="section-header">
-          <h3 className="font-bold text-slate-700 dark:text-slate-200 text-lg font-serif">Engagement Ağırlıkları (Tahmini)</h3>
-        </div>
-        <div className="space-y-3 mt-5">
-          {[
-            { action: 'Reply (yazar cevap verirse)', weight: '+75', multiple: '150× like', color: 'bg-emerald-500', barWidth: '100%' },
-            { action: 'Reply (normal)', weight: '+13.5', multiple: '27× like', color: 'bg-emerald-400', barWidth: '18%' },
-            { action: 'Bookmark + dwell >2dk', weight: '+10', multiple: '20× like', color: 'bg-blue-400', barWidth: '13%' },
-            { action: 'Retweet', weight: '+1.0', multiple: '2× like', color: 'bg-amber-400', barWidth: '2%' },
-            { action: 'Like', weight: '+0.5', multiple: 'referans', color: 'bg-slate-300 dark:bg-slate-600', barWidth: '1%' },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="w-48 text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">{item.action}</div>
-              <div className="flex-1 h-4 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
-                <div className={`h-full rounded-full ${item.color} opacity-60`} style={{ width: item.barWidth, minWidth: '6px' }} />
-              </div>
-              <div className="w-14 text-right text-xs font-mono text-slate-600 dark:text-slate-300 font-semibold">{item.weight}</div>
-              <div className="w-20 text-right text-[10px] text-slate-400">{item.multiple}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Content Format Performance */}
-      <div className="card p-6">
-        <div className="section-header">
-          <h3 className="font-bold text-slate-700 dark:text-slate-200 text-lg font-serif">İçerik Format Performansı</h3>
-        </div>
-        <div className="text-xs text-slate-400 mb-4 mt-1">Buffer 52M+ post analizi (2026)</div>
+      {/* Content Rules (from Xquik compose) */}
+      {data?.contentRules && data.contentRules.length > 0 && (
         <div className="space-y-3">
-          {[
-            { format: 'Metin', rate: 3.56, color: 'bg-emerald-500' },
-            { format: 'Görsel', rate: 3.40, color: 'bg-blue-500' },
-            { format: 'Video', rate: 2.96, color: 'bg-purple-500' },
-            { format: 'Link', rate: 2.25, color: 'bg-red-500' },
-          ].map(item => (
-            <div key={item.format} className="flex items-center gap-3">
-              <div className="w-16 text-sm text-slate-600 dark:text-slate-300 font-medium">{item.format}</div>
-              <div className="flex-1 h-7 bg-slate-100 dark:bg-white/[0.04] rounded-lg overflow-hidden">
-                <div className={`h-full ${item.color} rounded-lg flex items-center pl-3`} style={{ width: `${(item.rate / 4) * 100}%`, opacity: 0.5 }}>
-                  <span className="text-[11px] font-mono text-white font-semibold">%{item.rate}</span>
-                </div>
-              </div>
+          <h2 className="text-lg font-serif font-bold text-slate-700 dark:text-slate-200">Icerik Kurallari ({data.contentRules.length})</h2>
+          {data.contentRules.map((rule, i) => (
+            <div key={i} className="card p-4 hover:shadow-card-hover dark:hover:shadow-dark-card-hover">
+              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{rule.rule}</p>
             </div>
           ))}
         </div>
-      </div>
+      )}
 
-      {/* System Architecture */}
+      {/* Scorer Weights (19 signals) */}
+      {data?.scorerWeights && data.scorerWeights.length > 0 && (
+        <div className="card p-6">
+          <h2 className="text-lg font-serif font-bold text-slate-700 dark:text-slate-200 mb-1">Phoenix Skorlama Sinyalleri ({data.scorerWeights.length})</h2>
+          <p className="text-xs text-slate-400 mb-5">Agirlik degerleri TAHMIN — kaynak kodda sabit agirlik yok, transformer ogreniyor.</p>
+          <div className="space-y-3">
+            {data.scorerWeights.map((sw, i) => {
+              const isPositive = sw.weight > 0
+              const isConfirmed = isConfirmedSignal(sw.signal)
+              const absWeight = Math.abs(sw.weight)
+              const maxWeight = Math.max(...data.scorerWeights.map(s => Math.abs(s.weight)))
+              const barWidth = `${Math.max(2, (absWeight / maxWeight) * 100)}%`
+
+              return (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-40 flex-shrink-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">{sw.signal}</span>
+                      {isConfirmed && (
+                        <span className="text-[8px] px-1 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">kaynak</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1 h-4 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full opacity-60 ${isPositive ? 'bg-emerald-500' : 'bg-red-500'}`}
+                      style={{ width: barWidth, minWidth: '4px' }}
+                    />
+                  </div>
+                  <div className={`w-14 text-right text-xs font-mono font-semibold ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {sw.weight > 0 ? '+' : ''}{sw.weight}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Engagement Multipliers */}
+      {data?.engagementMultipliers && data.engagementMultipliers.length > 0 && (
+        <div className="card p-6">
+          <h2 className="text-lg font-serif font-bold text-slate-700 dark:text-slate-200 mb-5">Engagement Carpanlari</h2>
+          <div className="space-y-2">
+            {data.engagementMultipliers.map((em, i) => (
+              <div key={i} className="flex items-center justify-between py-2 border-b border-slate-50 dark:border-white/[0.04] last:border-0">
+                <span className="text-sm text-slate-600 dark:text-slate-300">{em.action}</span>
+                <span className="text-sm font-mono font-bold text-brand-red">{em.multiplier}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Velocity */}
+      {data?.engagementVelocity && (
+        <div className="card border-l-4 border-l-brand-gold p-6 bg-brand-gold-light dark:bg-brand-gold/5">
+          <h3 className="font-bold text-brand-gold mb-3">Engagement Hizi</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{data.engagementVelocity}</p>
+        </div>
+      )}
+
+      {/* Top Penalties */}
+      {data?.topPenalties && data.topPenalties.length > 0 && (
+        <div className="card p-6">
+          <h2 className="text-lg font-serif font-bold text-red-600 dark:text-red-400 mb-4">Cezalar</h2>
+          <div className="space-y-2">
+            {data.topPenalties.map((p, i) => (
+              <div key={i} className="flex gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <span className="text-red-500 flex-shrink-0 font-bold">!</span>
+                <span>{p}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* System Architecture (static — from source code) */}
       <div className="card p-6">
         <div className="section-header">
           <h3 className="font-bold text-slate-700 dark:text-slate-200 text-lg font-serif">Sistem Mimarisi</h3>
+          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1">x-algorithm-main kaynak kodundan dogrulanmis</p>
         </div>
         <div className="font-mono text-xs text-slate-500 dark:text-slate-400 leading-loose space-y-1 mt-4">
-          <div className="text-slate-400 text-[10px] tracking-widest font-sans font-bold">KULLANICI İSTEĞİ</div>
-          <div className="text-slate-300 dark:text-slate-600 ml-2">↓</div>
+          <div className="text-slate-400 text-[10px] tracking-widest font-sans font-bold">KULLANICI ISTEGI</div>
+          <div className="text-slate-300 dark:text-slate-600 ml-2">|</div>
           {[
-            '1. Query Hydration → User Action Sequence + Features',
-            '2. Candidate Sources → Thunder (in-network) + Phoenix (OON)',
-            '3. Hydration → Core data, author info, media',
-            '4. Pre-Scoring Filters → Duplicate, age, self, muted',
-            '5. Scoring → Phoenix + Weighted + Author Diversity + OON',
-            '6. Selection → Top K',
-            '7. Post-Selection → VF Filter (safety)',
+            '1. Query Hydration -> User Action Sequence + Features',
+            '2. Candidate Sources -> Thunder (in-network) + Phoenix (OON)',
+            '3. Hydration -> Core data, author info, media',
+            '4. Pre-Scoring Filters -> Duplicate, age, self, muted',
+            '5. Grok Transformer -> 19 sinyal logit -> sigmoid -> P(action)',
+            '6. Selection -> Top K',
+            '7. Post-Selection -> VF Filter (safety)',
           ].map((step, i) => (
             <div key={i} className="ml-2 pl-4 border-l-2 border-brand-red/20 py-1 hover:border-brand-red/50 hover:text-slate-700 dark:hover:text-white transition-colors">{step}</div>
           ))}
-          <div className="text-slate-300 dark:text-slate-600 ml-2">↓</div>
-          <div className="text-brand-red font-bold ml-2 font-sans text-sm">Sıralanmış Feed</div>
+          <div className="text-slate-300 dark:text-slate-600 ml-2">|</div>
+          <div className="text-brand-red font-bold ml-2 font-sans text-sm">Siralanmis Feed</div>
         </div>
       </div>
+
+      {!data && (
+        <div className="card p-8 text-center text-sm text-slate-400">
+          Algoritma verileri yuklenemedi. Xquik API baglantisini kontrol et.
+        </div>
+      )}
     </div>
   )
 }

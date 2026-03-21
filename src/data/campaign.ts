@@ -441,58 +441,8 @@ Güvercinler her sabah meydana döner.
   },
 ]
 
-export const ALGORITHM_RULES = [
-  {
-    title: 'Link Cezası',
-    content: 'Dış bağlantı içeren tweetler %30\u201350 erişim cezası alır. Link varsa ilk yanıta koy. A/B test: link kaldırıldığında %1700 erişim artışı.',
-    weight: 'KRİTİK' as const,
-  },
-  {
-    title: 'Author Diversity Cezası',
-    content: 'X algoritması aynı yazardan gelen ardışık içerikleri üstel decay ile cezalandırır. Formül: multiplier = (1 − floor) × decay^position + floor. Günde 2\u20133 tweet optimal.',
-    weight: 'KRİTİK' as const,
-  },
-  {
-    title: 'Visibility Filter',
-    content: 'Provokatif veya saldırgan dil VF filtresini tetikler. Spam, şiddet, gore içerikler tamamen kaldırılır. Mesajlar yapıcı ve umut dolu olmalı.',
-    weight: 'KRİTİK' as const,
-  },
-  {
-    title: 'Reply Zinciri Gücü',
-    content: 'Yazar cevaplı reply ≈ +75 puan (150× like). Normal reply ≈ +13.5 (27× like). Gelen her reply\'a cevap ver — en yüksek engagement sinyali.',
-    weight: 'YÜKSEK' as const,
-  },
-  {
-    title: 'İlk Saat Penceresi',
-    content: 'İlk 60 dakikadaki etkileşim, içeriğin geniş dağıtım havuzuna alınıp alınmayacağını belirler. Paylaşım sonrası 1 saat aktif ol.',
-    weight: 'YÜKSEK' as const,
-  },
-  {
-    title: 'Metin > Görsel > Video > Link',
-    content: 'Buffer 52M+ post analizi: Metin %3.56, Görsel %3.40, Video %2.96, Link %2.25 etkileşim oranı. Metin + görsel kombinasyonu ideal.',
-    weight: 'YÜKSEK' as const,
-  },
-  {
-    title: 'Tek Hashtag Odağı',
-    content: '#İstanbulBekliyor tek hashtag. 2\'den fazla hashtag spam gibi görünür ve algoritmik ceza alır. Enerji dağıtma.',
-    weight: 'YÜKSEK' as const,
-  },
-  {
-    title: 'OON Weight Factor',
-    content: 'Takip etmediğin hesaplardan gelen içerikler otomatik düşürülür (base_score × OON_WEIGHT_FACTOR). Hedef kitlenin hesabı takip etmesi kritik.',
-    weight: 'YÜKSEK' as const,
-  },
-  {
-    title: 'Premium Boost',
-    content: 'Premium aboneler ~4× in-network ve ~2× out-of-network boost alır. Toplam ~10× daha fazla erişim. TweepCred 65 altı hesapların sadece 3 tweeti değerlendirilir.',
-    weight: 'ORTA' as const,
-  },
-  {
-    title: 'Dwell Time',
-    content: 'Kullanıcının tweette geçirdiği süre önemli bir pozitif sinyal. Bookmark + dwell >2dk ≈ +10 puan (20× like). Satır araları ve görsel yapı dwell time artırır.',
-    weight: 'ORTA' as const,
-  },
-]
+// Algorithm rules are now fetched dynamically from Xquik compose API
+// See src/lib/algorithmData.ts
 
 export const MILESTONES = [
   { day: 50, label: 'İlk 50 Gün', type: 'milestone' },

@@ -23,99 +23,45 @@ export function getTimeBreakdown(days: number) {
   return { years, months, days: remainingDays, total: days };
 }
 
-// X Algorithm Optimization Checker
-// Based on actual X source code analysis (Phoenix scoring model)
+// Campaign-specific content rules (not algorithm — brand identity)
 
-interface AlgorithmCheck {
+export interface CampaignCheck {
   rule: string;
   passed: boolean;
-  impact: 'critical' | 'high' | 'medium';
   tip: string;
 }
 
-export function checkAlgorithm(tweetText: string): { score: number; checks: AlgorithmCheck[] } {
-  const checks: AlgorithmCheck[] = [];
+export function checkCampaignRules(tweetText: string): { score: number; checks: CampaignCheck[] } {
+  const checks: CampaignCheck[] = [];
 
-  // 1. No external links
-  const hasLink = /https?:\/\//.test(tweetText);
-  checks.push({
-    rule: 'Dış link yok',
-    passed: !hasLink,
-    impact: 'critical',
-    tip: hasLink ? 'Link %30\u201350 erişim cezası alır. İlk yanıta taşı.' : 'Link yok, erişim cezası almayacak.'
-  });
-
-  // 2. Has hashtag
-  const hashtagCount = (tweetText.match(/#\S+/g) || []).length;
-  checks.push({
-    rule: 'Hashtag kullanımı',
-    passed: hashtagCount >= 1 && hashtagCount <= 2,
-    impact: 'high',
-    tip: hashtagCount === 0 ? '#İstanbulBekliyor ekle.' : hashtagCount > 2 ? 'Fazla hashtag spam gibi görünür. 1\u20132 yeterli.' : 'Hashtag sayısı doğru.'
-  });
-
-  // 3. Starts with GÜN counter
+  // 1. Starts with GÜN counter (brand consistency)
   const startsWithGun = /^GÜN\s+\d+/i.test(tweetText.trim());
   checks.push({
-    rule: 'GÜN sayacıyla başlıyor',
+    rule: 'GÜN sayacı',
     passed: startsWithGun,
-    impact: 'high',
-    tip: startsWithGun ? 'Marka tutarlılığı korunuyor.' : 'Tweet "GÜN [sayı]" ile başlamalı.'
+    tip: startsWithGun ? 'Marka tutarlılığı korunuyor.' : 'Tweet "GÜN [sayı]" ile başlamalı.',
   });
 
-  // 4. Character count
-  const charCount = tweetText.length;
-  const goodLength = charCount >= 80 && charCount <= 260;
-  checks.push({
-    rule: 'Karakter uzunluğu (80\u2013260)',
-    passed: goodLength,
-    impact: 'medium',
-    tip: charCount < 80 ? `Çok kısa (${charCount}). Dwell time düşük olur.` : charCount > 260 ? `Çok uzun (${charCount}). Okunmadan geçilir.` : `İyi uzunluk (${charCount} karakter).`
-  });
-
-  // 5. Ends with question or CTA
-  const endsWithQuestion = /\?[\s]*$/.test(tweetText.trim()) || /\?[\s]*#/.test(tweetText);
-  checks.push({
-    rule: 'Soru/etkileşim çağrısı',
-    passed: endsWithQuestion,
-    impact: 'high',
-    tip: endsWithQuestion ? 'Soru formatı reply tetikler = en güçlü sinyal.' : 'Sonda soru ekle: "Kaç gündür bekliyoruz?" gibi.'
-  });
-
-  // 6. Has line breaks (visual structure)
+  // 2. Has visual structure (line breaks for dwell time)
   const lineBreaks = (tweetText.match(/\n/g) || []).length;
   checks.push({
     rule: 'Görsel yapı (satır araları)',
     passed: lineBreaks >= 2,
-    impact: 'medium',
-    tip: lineBreaks < 2 ? 'Satır araları ekle. Okunabilirlik = dwell time.' : 'Görsel yapı iyi.'
+    tip: lineBreaks < 2 ? 'Satır araları ekle. Okunabilirlik = dwell time.' : 'Görsel yapı iyi.',
   });
 
-  // 7. No emoji overuse
-  const emojiCount = (tweetText.match(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu) || []).length;
+  // 3. Has campaign hashtag
+  const hasHashtag = /#İstanbulBekliyor/i.test(tweetText);
   checks.push({
-    rule: 'Emoji kullanımı',
-    passed: emojiCount <= 3,
-    impact: 'medium',
-    tip: emojiCount > 3 ? 'Fazla emoji ciddiyet algısını düşürür.' : 'Emoji kullanımı uygun.'
+    rule: '#İstanbulBekliyor',
+    passed: hasHashtag,
+    tip: hasHashtag ? 'Kampanya hashtag\'i mevcut.' : '#İstanbulBekliyor ekle.',
   });
 
-  // 8. Text-first (no media-only tweet)
-  const hasText = tweetText.trim().length > 20;
-  checks.push({
-    rule: 'Metin ağırlıklı',
-    passed: hasText,
-    impact: 'high',
-    tip: hasText ? 'Metin postları X\'te en yüksek etkileşim oranına sahip (%3.56).' : 'Daha fazla metin ekle.'
-  });
+  const passed = checks.filter(c => c.passed).length;
+  const score = Math.round((passed / checks.length) * 100);
 
-  // Calculate score
-  const weights = { critical: 30, high: 15, medium: 8 };
-  const maxScore = checks.reduce((sum, c) => sum + weights[c.impact], 0);
-  const score = checks.reduce((sum, c) => sum + (c.passed ? weights[c.impact] : 0), 0);
-  const percentage = Math.round((score / maxScore) * 100);
-
-  return { score: percentage, checks };
+  return { score, checks };
 }
 
 export function getScoreColor(score: number): string {

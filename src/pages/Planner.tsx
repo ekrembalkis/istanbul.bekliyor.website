@@ -1,6 +1,8 @@
-import { useState } from 'react'
-import { getDayCount, getDateForDay, checkAlgorithm, getScoreColor, getScoreBg } from '../lib/utils'
+import { useState, useEffect, useCallback } from 'react'
+import { getDayCount, getDateForDay, checkCampaignRules, getScoreColor, getScoreBg } from '../lib/utils'
 import { getDayPlan } from '../data/campaign'
+import { scoreDraft } from '../lib/xquik'
+import type { ScoreResult } from '../lib/xquik'
 import { supabase } from '../lib/supabase'
 import { CopyBtn } from '../components/CopyBtn'
 
@@ -10,10 +12,33 @@ export default function Planner() {
   const [tweetText, setTweetText] = useState(plan.tweetTemplate)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const analysis = checkAlgorithm(tweetText)
+  const [algoResult, setAlgoResult] = useState<ScoreResult | null>(null)
+  const [algoLoading, setAlgoLoading] = useState(false)
+
+  const campaignAnalysis = checkCampaignRules(tweetText)
+
+  // Debounced Xquik scoring
+  const scoreWithXquik = useCallback(async (draft: string) => {
+    if (draft.trim().length < 10) { setAlgoResult(null); return }
+    setAlgoLoading(true)
+    try {
+      const result = await scoreDraft(draft, true)
+      setAlgoResult(result)
+    } catch {
+      setAlgoResult(null)
+    }
+    setAlgoLoading(false)
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(() => scoreWithXquik(tweetText), 800)
+    return () => clearTimeout(timer)
+  }, [tweetText, scoreWithXquik])
+
+  const algoScore = algoResult ? Math.round((algoResult.passedCount / algoResult.totalChecks) * 100) : 0
 
   const saveTweet = async () => {
-    if (!supabase) { alert('Supabase bağlantısı yapılandırılmamış. .env dosyasını kontrol et.'); return }
+    if (!supabase) { alert('Supabase baglantisi yapilandirilmamis.'); return }
     setSaving(true)
     try {
       const { error } = await supabase.from('tweets').upsert({
@@ -23,8 +48,11 @@ export default function Planner() {
         tweet_text: tweetText,
         nano_prompt: plan.prompt,
         status: 'ready',
-        algorithm_score: analysis.score,
-        algorithm_notes: analysis.checks.filter(c => !c.passed).map(c => c.tip),
+        algorithm_score: algoResult ? algoResult.passedCount * 9 : campaignAnalysis.score, // 0-99 scale
+        algorithm_notes: [
+          ...(algoResult?.checklist?.filter(c => !c.passed).map(c => c.factor) || []),
+          ...campaignAnalysis.checks.filter(c => !c.passed).map(c => c.tip),
+        ],
       }, { onConflict: 'day_number' })
       if (!error) setSaved(true)
     } catch (e) { console.error(e) }
@@ -35,12 +63,12 @@ export default function Planner() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="section-header">
-          <h1 className="text-2xl font-serif font-bold text-slate-800 dark:text-white">Tweet Planlayıcı</h1>
+          <h1 className="text-2xl font-serif font-bold text-slate-800 dark:text-white">Tweet Planlayici</h1>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-2xl">{plan.emoji}</span>
           <div className="text-right">
-            <div className="text-sm font-mono text-brand-red font-bold">GÜN {day}</div>
+            <div className="text-sm font-mono text-brand-red font-bold">GUN {day}</div>
             <div className="text-xs text-slate-400">{plan.theme}</div>
           </div>
         </div>
@@ -50,7 +78,7 @@ export default function Planner() {
         {/* Left: Composer */}
         <div className="space-y-5">
           <div className="card p-6">
-            <label className="text-[10px] font-bold text-slate-400 tracking-wider block mb-3">TWEET METNİ</label>
+            <label className="text-[10px] font-bold text-slate-400 tracking-wider block mb-3">TWEET METNI</label>
             <textarea
               value={tweetText}
               onChange={e => { setTweetText(e.target.value); setSaved(false) }}
@@ -76,7 +104,7 @@ export default function Planner() {
           </div>
 
           <div className="card p-5">
-            <label className="text-[10px] font-bold text-slate-400 tracking-wider block mb-3">GÖRSEL BİLGİSİ</label>
+            <label className="text-[10px] font-bold text-slate-400 tracking-wider block mb-3">GORSEL BILGISI</label>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <div className="text-[10px] text-slate-400 mb-1 font-semibold">SAHNE</div>
@@ -105,44 +133,70 @@ export default function Planner() {
           </div>
         </div>
 
-        {/* Right: Algorithm Check + Checklist */}
+        {/* Right: Scores + Checklist */}
         <div className="space-y-5">
-          <div className={`card rounded-2xl p-6 ${getScoreBg(analysis.score)}`}>
-            <div className="flex items-center justify-between mb-5">
-              <label className="text-[10px] font-bold text-slate-400 tracking-wider">ALGORİTMA SKORU</label>
-              <span className={`stat-number text-5xl ${getScoreColor(analysis.score)}`}>{analysis.score}</span>
+          {/* Xquik Algorithm Score */}
+          <div className={`card rounded-2xl p-6 ${algoResult ? (algoResult.passed ? getScoreBg(100) : getScoreBg(algoScore)) : 'bg-slate-50 dark:bg-white/[0.03]'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 tracking-wider">ALGORITMA SKORU</label>
+                <div className="text-[10px] text-slate-400 mt-0.5">Xquik canli 11 kontrol</div>
+              </div>
+              {algoLoading ? (
+                <svg className="w-8 h-8 animate-spin text-slate-300" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" /><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" className="opacity-75" /></svg>
+              ) : algoResult ? (
+                <span className={`stat-number text-5xl ${algoResult.passed ? 'text-emerald-600 dark:text-emerald-400' : getScoreColor(algoScore)}`}>
+                  {algoResult.passedCount}/{algoResult.totalChecks}
+                </span>
+              ) : (
+                <span className="text-2xl text-slate-300">—</span>
+              )}
             </div>
-            <div className="space-y-3">
-              {analysis.checks.map((check, i) => (
-                <div key={i} className="flex items-start gap-3 text-sm">
-                  <span className={`mt-0.5 text-xs flex-shrink-0 font-bold ${check.passed ? 'text-emerald-500' : 'text-red-500'}`}>
+            {algoResult && (
+              <div className="space-y-2">
+                {algoResult.checklist.map((check, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <span className={`text-xs font-bold ${check.passed ? 'text-emerald-500' : 'text-red-500'}`}>
+                      {check.passed ? '✓' : '✕'}
+                    </span>
+                    <span className={check.passed ? 'text-slate-400' : 'text-slate-700 dark:text-slate-200 font-medium'}>{check.factor}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Campaign Rules */}
+          <div className={`card rounded-2xl p-5 ${getScoreBg(campaignAnalysis.score)}`}>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-[10px] font-bold text-slate-400 tracking-wider">KAMPANYA UYUMU</label>
+              <span className={`stat-number text-3xl ${getScoreColor(campaignAnalysis.score)}`}>
+                {campaignAnalysis.checks.filter(c => c.passed).length}/{campaignAnalysis.checks.length}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {campaignAnalysis.checks.map((check, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  <span className={`text-xs font-bold ${check.passed ? 'text-emerald-500' : 'text-red-500'}`}>
                     {check.passed ? '✓' : '✕'}
                   </span>
-                  <div className="flex-1 min-w-0">
-                    <div className={`font-medium ${check.passed ? 'text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>{check.rule}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">{check.tip}</div>
-                  </div>
-                  <span className={`chip text-[10px] ${
-                    check.impact === 'critical' ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20' :
-                    check.impact === 'high' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20' :
-                    'bg-slate-50 dark:bg-white/[0.04] text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10'
-                  }`}>{check.impact === 'critical' ? 'KRİTİK' : check.impact === 'high' ? 'YÜKSEK' : 'ORTA'}</span>
+                  <span className={check.passed ? 'text-slate-400' : 'text-slate-700 dark:text-slate-200'}>{check.rule}</span>
                 </div>
               ))}
             </div>
           </div>
 
+          {/* Pre-publish checklist */}
           <div className="card p-5">
-            <label className="text-[10px] font-bold text-slate-400 tracking-wider block mb-4">PAYLAŞIM ÖNCESİ KONTROL</label>
+            <label className="text-[10px] font-bold text-slate-400 tracking-wider block mb-4">PAYLASIM ONCESI KONTROL</label>
             {[
-              'Nano Banana Pro ile görseli ürettim',
-              'Görsel 1:1 kare format, siyah/beyaz + tek altın eleman',
+              'Nano Banana Pro ile gorseli urettim',
+              'Gorsel 1:1 kare format, siyah/beyaz + tek altin eleman',
               'Tweet metnini kontrol ettim',
-              `Algoritma skoru ${analysis.score >= 80 ? '80+ (yeşil) ✓' : analysis.score + ' — iyileştir!'}`,
-              'Link yok (varsa ilk yanıta taşıdım)',
-              '#İstanbulBekliyor hashtag\'i var',
-              'Display name güncellendi (GÜN sayısı)',
-              'Sabah 09:00 TSİ civarında paylaşacağım',
+              `Algoritma skoru ${algoResult?.passed ? '11/11 ✓' : algoResult ? `${algoResult.passedCount}/11 — iyilestir!` : 'bekleniyor...'}`,
+              `Kampanya uyumu ${campaignAnalysis.score >= 100 ? '3/3 ✓' : `${campaignAnalysis.checks.filter(c => c.passed).length}/3 — iyilestir!`}`,
+              'Display name guncellendi (GUN sayisi)',
+              'Sabah 09:00 TSI civarinda paylasacagim',
             ].map((item, i) => (
               <label key={i} className="flex items-center gap-3 py-2 text-sm text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-white transition-colors border-b border-slate-50 dark:border-white/[0.04] last:border-0">
                 <input type="checkbox" className="rounded w-4 h-4" />
