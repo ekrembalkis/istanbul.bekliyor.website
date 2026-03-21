@@ -896,14 +896,17 @@ export default function StyleClone() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={handleGetGuidance}
-                    disabled={loading || !composeTopic.trim() || !composeStyle}
+                    disabled={loading || !composeTopic.trim() || !composeStyle || composeMode === 'quote' || composeMode === 'reply'}
                     className="btn w-full justify-center disabled:opacity-50 text-xs"
                   >
                     {loading ? 'Rehber...' : 'Rehber al'}
                   </button>
                   <button
                     onClick={handleAutoGenerate}
-                    disabled={generating || !composeTopic.trim() || !composeStyle}
+                    disabled={generating || !composeStyle || (
+                      (composeMode === 'tweet' || composeMode === 'thread') ? !composeTopic.trim() :
+                      !quoteTweetText
+                    )}
                     className="btn btn-primary w-full justify-center disabled:opacity-50 text-xs"
                   >
                     {generating ? (
