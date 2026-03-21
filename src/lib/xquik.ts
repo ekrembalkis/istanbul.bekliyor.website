@@ -314,6 +314,7 @@ export interface GenerateResult {
   tone: string
   goal: string
   tweets: GeneratedTweet[]
+  geminiUsage?: { promptTokens: number; completionTokens: number; totalTokens: number; calls: number }
 }
 
 /** Generate tweets in a given style using Gemini + score loop */
@@ -395,6 +396,26 @@ export async function lookupTweet(tweetIdOrUrl: string): Promise<TweetInfo> {
     likeCount: raw.tweet.likeCount,
     author: raw.author,
   }
+}
+
+// ── Account & Usage ──
+
+export interface XquikAccount {
+  email: string
+  locale: string
+  xUsername: string
+  subscription: {
+    plan?: string
+    status?: string
+    currentPeriodEnd?: string
+    cancelAtPeriodEnd?: boolean
+  } | null
+  usage: Record<string, unknown>
+}
+
+/** Fetch Xquik account info including subscription and usage */
+export async function getAccount(): Promise<XquikAccount> {
+  return api<XquikAccount>('/account')
 }
 
 // ── Helpers ──

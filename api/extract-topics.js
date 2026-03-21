@@ -71,6 +71,12 @@ export default async function handler(req, res) {
 
     const geminiData = await geminiRes.json()
     const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '[]'
+    const geminiUsage = {
+      promptTokens: geminiData.usageMetadata?.promptTokenCount || 0,
+      completionTokens: geminiData.usageMetadata?.candidatesTokenCount || 0,
+      totalTokens: geminiData.usageMetadata?.totalTokenCount || 0,
+      calls: 1,
+    }
 
     // Parse JSON from Gemini (may have markdown code blocks)
     const jsonMatch = rawText.match(/\[[\s\S]*\]/)
@@ -122,7 +128,7 @@ export default async function handler(req, res) {
       }
     })
 
-    return res.status(200).json({ topics })
+    return res.status(200).json({ topics, geminiUsage })
   } catch (error) {
     console.error('Extract topics error:', error)
     return res.status(200).json({ topics: [] })

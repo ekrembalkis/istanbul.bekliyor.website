@@ -13,6 +13,7 @@ import { getLibrary, saveEntry, togglePin, incrementGenerated, addTopic, CATEGOR
 import type { StyleLibraryEntry } from '../lib/styleLibrary'
 import { getTopicSuggestions } from '../lib/topicSuggestor'
 import type { TopicSuggestion } from '../lib/topicSuggestor'
+import { trackGeminiUsage } from '../lib/costTracker'
 
 type Tab = 'analyze' | 'compose' | 'drafts'
 
@@ -243,6 +244,7 @@ export default function StyleClone() {
         lengthHint: lengthHint || undefined,
       })
       setGeneratedTweets(result.tweets)
+      if (result.geminiUsage) trackGeminiUsage(result.geminiUsage)
       incrementGenerated(composeStyle)
       addTopic(composeStyle, composeTopic)
       setLibrary(getLibrary())

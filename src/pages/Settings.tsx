@@ -1,16 +1,209 @@
+import { useState, useEffect } from 'react'
 import { getDayCount } from '../lib/utils'
 import { DAY_PLANS } from '../data/campaign'
 import { CopyBtn } from '../components/CopyBtn'
+import { getAccount } from '../lib/xquik'
+import type { XquikAccount } from '../lib/xquik'
+import { getCostSummary, calculateGeminiCost, resetCostTracker } from '../lib/costTracker'
+import type { GeminiUsage } from '../lib/costTracker'
+
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K'
+  return n.toString()
+}
+
+function formatCost(usd: number): string {
+  if (usd < 0.01) return '<$0.01'
+  return '$' + usd.toFixed(2)
+}
+
+function UsageBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0
+  return (
+    <div>
+      <div className="flex justify-between text-[10px] mb-1">
+        <span className="text-slate-400">{label}</span>
+        <span className="font-mono text-slate-500 dark:text-slate-300">{formatTokens(value)}</span>
+      </div>
+      <div className="h-1.5 bg-slate-100 dark:bg-white/[0.06] rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.max(2, pct)}%` }} />
+      </div>
+    </div>
+  )
+}
+
+function GeminiCard({ title, usage, period }: { title: string; usage: GeminiUsage; period: string }) {
+  const cost = calculateGeminiCost(usage)
+  return (
+    <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 border border-slate-100 dark:border-white/[0.06]">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <div className="text-[10px] font-bold text-slate-400 tracking-wider">{title}</div>
+          <div className="text-[10px] text-slate-400">{period}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCost(cost)}</div>
+          <div className="text-[10px] text-slate-400">{usage.calls} istek</div>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <UsageBar label="Input tokens" value={usage.promptTokens} max={Math.max(usage.promptTokens, usage.completionTokens)} color="bg-blue-400" />
+        <UsageBar label="Output tokens" value={usage.completionTokens} max={Math.max(usage.promptTokens, usage.completionTokens)} color="bg-indigo-400" />
+      </div>
+    </div>
+  )
+}
 
 export default function Settings() {
   const day = getDayCount()
+  const [account, setAccount] = useState<XquikAccount | null>(null)
+  const [accountLoading, setAccountLoading] = useState(true)
+  const [accountError, setAccountError] = useState('')
+  const [costSummary, setCostSummary] = useState(getCostSummary())
+
+  useEffect(() => {
+    getAccount()
+      .then(setAccount)
+      .catch(e => setAccountError(e.message))
+      .finally(() => setAccountLoading(false))
+  }, [])
+
+  useEffect(() => {
+    // Refresh cost summary every 30s
+    const interval = setInterval(() => setCostSummary(getCostSummary()), 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const promptTemplate = `Minimalist [SAHNE TÜRÜ] of [SAHNE DETAYI], shot in stark black and white. [DETAYLI AÇIKLAMA]. [ALTIN ELEMAN] has a warm amber gold color (#D4A843). Everything else is deep black and charcoal gray. [KAMERA]. Bold clean text reading "GÜN [SAYI]" in large uppercase sans-serif font at the top of the frame. Brutalist minimalist style. 1:1 aspect ratio at 2K resolution.`
+
+  const sub = account?.subscription
 
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="section-header">
         <h1 className="text-2xl font-serif font-bold text-slate-800 dark:text-white">Ayarlar</h1>
+      </div>
+
+      {/* ═══════════ COST TRACKER ═══════════ */}
+      <div className="card p-6">
+        <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-5 tracking-wider">API KULLANIM PANELİ</h2>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Xquik Subscription */}
+          <div className="space-y-4">
+            <div className="text-[10px] font-bold text-slate-400 tracking-wider">XQUIK ABONELİK</div>
+            {accountLoading ? (
+              <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-6 border border-slate-100 dark:border-white/[0.06] text-center">
+                <div className="text-xs text-slate-400 animate-pulse">Yükleniyor...</div>
+              </div>
+            ) : accountError ? (
+              <div className="bg-red-50 dark:bg-red-500/10 rounded-xl p-4 border border-red-200 dark:border-red-500/20">
+                <div className="text-xs text-red-600 dark:text-red-400">{accountError}</div>
+              </div>
+            ) : account ? (
+              <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 border border-slate-100 dark:border-white/[0.06] space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${sub?.status === 'active' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                      {sub?.plan || 'Free'}
+                    </span>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-lg font-bold ${
+                    sub?.status === 'active'
+                      ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400'
+                  }`}>
+                    {sub?.status === 'active' ? 'Aktif' : sub?.status || 'Pasif'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-[10px]">
+                  <div>
+                    <div className="text-slate-400">Hesap</div>
+                    <div className="font-mono text-slate-600 dark:text-slate-300">{account.email}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400">X Hesabı</div>
+                    <div className="font-mono text-slate-600 dark:text-slate-300">@{account.xUsername || '-'}</div>
+                  </div>
+                  {sub?.currentPeriodEnd && (
+                    <div>
+                      <div className="text-slate-400">Dönem Sonu</div>
+                      <div className="font-mono text-slate-600 dark:text-slate-300">
+                        {new Date(sub.currentPeriodEnd).toLocaleDateString('tr-TR')}
+                      </div>
+                    </div>
+                  )}
+                  {sub?.cancelAtPeriodEnd && (
+                    <div>
+                      <div className="text-slate-400">Durum</div>
+                      <div className="font-mono text-amber-600 dark:text-amber-400">Dönem sonunda iptal</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Usage data from Xquik */}
+                {account.usage && Object.keys(account.usage).length > 0 && (
+                  <div className="border-t border-slate-100 dark:border-white/[0.06] pt-3 mt-3">
+                    <div className="text-[10px] font-bold text-slate-400 tracking-wider mb-2">XQUIK KULLANIM</div>
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      {Object.entries(account.usage).map(([key, val]) => (
+                        <div key={key} className="flex justify-between bg-white dark:bg-dark-card rounded-lg px-2.5 py-1.5 border border-slate-100 dark:border-white/[0.06]">
+                          <span className="text-slate-400">{key}</span>
+                          <span className="font-mono font-bold text-slate-600 dark:text-slate-300">{String(val)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          {/* Gemini Usage */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] font-bold text-slate-400 tracking-wider">GEMİNİ 2.0 FLASH</div>
+              <button
+                onClick={() => { if (confirm('Gemini kullanım verilerini sıfırla?')) { resetCostTracker(); setCostSummary(getCostSummary()) } }}
+                className="text-[10px] text-slate-400 hover:text-red-500 transition-colors"
+              >
+                Sıfırla
+              </button>
+            </div>
+            <GeminiCard title="BUGÜN" usage={costSummary.today} period={new Date().toLocaleDateString('tr-TR')} />
+            <GeminiCard title="SON 30 GÜN" usage={costSummary.last30Days} period="Aylık toplam" />
+
+            {/* Pricing reference */}
+            <div className="text-[10px] text-slate-400 flex items-center gap-3">
+              <span>Fiyat: Input $0.10/1M</span>
+              <span>Output $0.40/1M</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Daily chart - last 7 days */}
+        {costSummary.dailyRecords.length > 1 && (
+          <div className="mt-6 border-t border-slate-100 dark:border-white/[0.06] pt-4">
+            <div className="text-[10px] font-bold text-slate-400 tracking-wider mb-3">SON 7 GÜN</div>
+            <div className="flex items-end gap-1 h-16">
+              {costSummary.dailyRecords.slice(-7).map((r, i) => {
+                const maxTokens = Math.max(...costSummary.dailyRecords.slice(-7).map(d => d.gemini.totalTokens), 1)
+                const pct = (r.gemini.totalTokens / maxTokens) * 100
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="w-full bg-blue-100 dark:bg-blue-500/20 rounded-sm" style={{ height: `${Math.max(2, pct)}%` }}
+                      title={`${r.date}: ${formatTokens(r.gemini.totalTokens)} token, ${r.gemini.calls} istek`}
+                    />
+                    <span className="text-[8px] text-slate-400">{r.date.slice(5)}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Campaign Info */}

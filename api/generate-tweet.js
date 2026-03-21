@@ -186,6 +186,14 @@ ${modeInstruction}`
     const geminiData = await geminiRes.json()
     const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
 
+    // Track Gemini token usage
+    const geminiUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0, calls: 1 }
+    if (geminiData.usageMetadata) {
+      geminiUsage.promptTokens = geminiData.usageMetadata.promptTokenCount || 0
+      geminiUsage.completionTokens = geminiData.usageMetadata.candidatesTokenCount || 0
+      geminiUsage.totalTokens = geminiData.usageMetadata.totalTokenCount || 0
+    }
+
     // Parse tweets from numbered list
     const tweets = rawText
       .split('\n')
@@ -228,6 +236,12 @@ ${modeInstruction}`
           const extended = extData.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
           if (extended && extended.length >= 80) {
             currentDraft = extended.replace(/^\d+[\.\)\/]\s*/, '').replace(/^["']|["']$/g, '')
+          }
+          if (extData.usageMetadata) {
+            geminiUsage.calls++
+            geminiUsage.promptTokens += extData.usageMetadata.promptTokenCount || 0
+            geminiUsage.completionTokens += extData.usageMetadata.candidatesTokenCount || 0
+            geminiUsage.totalTokens += extData.usageMetadata.totalTokenCount || 0
           }
         }
       }
@@ -284,6 +298,12 @@ ${modeInstruction}`
             if (fixed && fixed.length > 40) {
               currentDraft = fixed.replace(/^\d+[\.\)]\s*/, '').replace(/^["']|["']$/g, '')
             }
+            if (fixData.usageMetadata) {
+              geminiUsage.calls++
+              geminiUsage.promptTokens += fixData.usageMetadata.promptTokenCount || 0
+              geminiUsage.completionTokens += fixData.usageMetadata.candidatesTokenCount || 0
+              geminiUsage.totalTokens += fixData.usageMetadata.totalTokenCount || 0
+            }
           }
         }
       }
@@ -305,6 +325,7 @@ ${modeInstruction}`
       questionRatio: Math.round(questionRatio * 100),
       tweets: results,
       totalGenerated: tweets.length,
+      geminiUsage,
     })
   } catch (error) {
     console.error('Generate tweet error:', error)
