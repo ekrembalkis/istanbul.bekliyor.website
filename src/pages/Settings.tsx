@@ -6,6 +6,8 @@ import { getAccount } from '../lib/xquik'
 import type { XquikAccount } from '../lib/xquik'
 import { getCostSummary, calculateGeminiCost, resetCostTracker } from '../lib/costTracker'
 import type { GeminiUsage } from '../lib/costTracker'
+import { fetchAlgorithmData, isConfirmedSignal } from '../lib/algorithmData'
+import type { AlgorithmData } from '../lib/algorithmData'
 
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M'
@@ -61,12 +63,17 @@ export default function Settings() {
   const [accountLoading, setAccountLoading] = useState(true)
   const [accountError, setAccountError] = useState('')
   const [costSummary, setCostSummary] = useState(getCostSummary())
+  const [algoData, setAlgoData] = useState<AlgorithmData | null>(null)
+  const [algoLoading, setAlgoLoading] = useState(true)
 
   useEffect(() => {
     getAccount()
       .then(setAccount)
       .catch(e => setAccountError(e.message))
       .finally(() => setAccountLoading(false))
+    fetchAlgorithmData()
+      .then(setAlgoData)
+      .finally(() => setAlgoLoading(false))
   }, [])
 
   useEffect(() => {
@@ -335,29 +342,132 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Algorithm Rules */}
+      {/* ═══════════ ALGORITHM GUIDE ═══════════ */}
       <div className="card p-6">
-        <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 tracking-wider">ALGORITMA KURALLARI</h2>
-        <p className="text-[10px] text-slate-400 mb-4">Xquik canlı veri — X algoritmasına göre</p>
-        <div className="space-y-2.5 text-sm text-slate-500 dark:text-slate-400">
-          {[
-            { text: 'Dış link koyma, reply\'a taşı', type: 'error' },
-            { text: 'Emoji kullanma', type: 'error' },
-            { text: 'Em dash / çift tire kullanma (AI tespiti)', type: 'error' },
-            { text: 'Soru veya açık cümle ile bitir (reply tetikler)', type: 'tip' },
-            { text: 'Reply\'lara hızla cevap ver (en güçlü sinyal)', type: 'tip' },
-            { text: 'İlk 30 dakikada aktif ol', type: 'tip' },
-            { text: 'Paylaşıma değer içerik yaz (DM ile paylaşılabilir)', type: 'tip' },
-            { text: 'Görsel ekle (photo_expand sinyali)', type: 'tip' },
-          ].map((rule, i) => (
-            <div key={i} className="flex gap-3 items-start p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors">
-              <span className={`w-6 h-6 rounded-md text-[10px] font-bold flex items-center justify-center flex-shrink-0 ${
-                rule.type === 'error' ? 'bg-red-50 dark:bg-red-500/10 text-red-500' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500'
-              }`}>{rule.type === 'error' ? '!' : '+'}</span>
-              <span className="mt-0.5">{rule.text}</span>
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 tracking-wider">X ALGORİTMA REHBERİ</h2>
+            <p className="text-[10px] text-slate-400 mt-1">Xquik canlı veri + x-algorithm-main kaynak kodu</p>
+          </div>
+          {algoData?.source && (
+            <span className="text-[9px] px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500 border border-blue-200 dark:border-blue-500/20">
+              {algoData.source.substring(0, 40)}
+            </span>
+          )}
         </div>
+
+        {algoLoading ? (
+          <div className="text-xs text-slate-400 animate-pulse text-center py-8">Algoritma verileri yükleniyor...</div>
+        ) : !algoData ? (
+          <div className="text-xs text-slate-400 text-center py-8">Algoritma verileri yüklenemedi</div>
+        ) : (
+          <div className="space-y-6">
+            {/* Content Rules */}
+            {algoData.contentRules.length > 0 && (
+              <div>
+                <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 tracking-wider mb-3">İÇERİK KURALLARI ({algoData.contentRules.length})</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {algoData.contentRules.map((rule, i) => (
+                    <div key={i} className="flex gap-2 items-start p-2.5 rounded-lg bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06]">
+                      <span className="w-5 h-5 rounded bg-brand-red/10 text-brand-red text-[9px] font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
+                      <span className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">{rule.rule}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Scorer Weights */}
+            {algoData.scorerWeights.length > 0 && (
+              <div>
+                <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 tracking-wider mb-1">PHOENIX SKORLAMA SİNYALLERİ ({algoData.scorerWeights.length})</h3>
+                <p className="text-[9px] text-slate-400 mb-3">Ağırlıklar tahmin — transformer öğreniyor, sabit değerler yok</p>
+                <div className="space-y-1.5">
+                  {algoData.scorerWeights.map((sw, i) => {
+                    const isPositive = sw.weight > 0
+                    const isConfirmed = isConfirmedSignal(sw.signal)
+                    const absWeight = Math.abs(sw.weight)
+                    const maxWeight = Math.max(...algoData.scorerWeights.map(s => Math.abs(s.weight)))
+                    const barWidth = `${Math.max(2, (absWeight / maxWeight) * 100)}%`
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        <div className="w-32 flex-shrink-0 flex items-center gap-1">
+                          <span className="text-[10px] text-slate-600 dark:text-slate-300">{sw.signal}</span>
+                          {isConfirmed && <span className="text-[7px] px-1 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600">kaynak</span>}
+                        </div>
+                        <div className="flex-1 h-2.5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${isPositive ? 'bg-emerald-500/60' : 'bg-red-500/60'}`} style={{ width: barWidth }} />
+                        </div>
+                        <span className={`w-10 text-right text-[10px] font-mono font-bold ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {sw.weight > 0 ? '+' : ''}{sw.weight}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Engagement Multipliers + Penalties side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {algoData.engagementMultipliers.length > 0 && (
+                <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 border border-slate-100 dark:border-white/[0.06]">
+                  <h3 className="text-[10px] font-bold text-slate-400 tracking-wider mb-3">ENGAGEMENT ÇARPANLARI</h3>
+                  <div className="space-y-1.5">
+                    {algoData.engagementMultipliers.map((em, i) => (
+                      <div key={i} className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-500 dark:text-slate-400">{em.action}</span>
+                        <span className="font-mono font-bold text-brand-red">{em.multiplier}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {algoData.topPenalties.length > 0 && (
+                <div className="bg-red-50 dark:bg-red-500/5 rounded-xl p-4 border border-red-100 dark:border-red-500/10">
+                  <h3 className="text-[10px] font-bold text-red-500 tracking-wider mb-3">CEZALAR</h3>
+                  <div className="space-y-1.5">
+                    {algoData.topPenalties.map((p, i) => (
+                      <div key={i} className="flex gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span className="text-red-500 flex-shrink-0 font-bold">!</span>
+                        <span>{p}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Velocity */}
+            {algoData.engagementVelocity && (
+              <div className="bg-brand-gold/5 rounded-xl p-4 border-l-4 border-l-brand-gold">
+                <h3 className="text-[10px] font-bold text-brand-gold tracking-wider mb-1">ENGAGEMENT HIZI</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{algoData.engagementVelocity}</p>
+              </div>
+            )}
+
+            {/* System Architecture */}
+            <details className="group">
+              <summary className="text-[10px] font-bold text-slate-400 tracking-wider cursor-pointer hover:text-slate-600 transition-colors">
+                SİSTEM MİMARİSİ (kaynak koddan)
+              </summary>
+              <div className="font-mono text-[10px] text-slate-400 leading-loose space-y-0.5 mt-3 pl-2 border-l-2 border-slate-100 dark:border-white/[0.06]">
+                {[
+                  '1. Query Hydration → User Action Sequence + Features',
+                  '2. Candidate Sources → Thunder (in-network) + Phoenix (OON)',
+                  '3. Hydration → Core data, author info, media',
+                  '4. Pre-Scoring Filters → Duplicate, age, self, muted',
+                  '5. Grok Transformer → 19 sinyal logit → sigmoid → P(action)',
+                  '6. Selection → Top K',
+                  '7. Post-Selection → VF Filter (safety)',
+                ].map((step, i) => (
+                  <div key={i} className="py-0.5 hover:text-slate-700 dark:hover:text-white transition-colors">{step}</div>
+                ))}
+              </div>
+            </details>
+          </div>
+        )}
       </div>
 
       {/* Milestone Strategy */}

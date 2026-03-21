@@ -5,7 +5,6 @@ import Planner from './pages/Planner'
 import AlgorithmCheck from './pages/AlgorithmCheck'
 import Calendar from './pages/Calendar'
 import Archive from './pages/Archive'
-import AlgorithmGuide from './pages/AlgorithmGuide'
 import Settings from './pages/Settings'
 import StyleClone from './pages/StyleClone'
 
@@ -18,7 +17,6 @@ export default function App() {
         <Route path="/check" element={<AlgorithmCheck />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/archive" element={<Archive />} />
-        <Route path="/algorithm" element={<AlgorithmGuide />} />
         <Route path="/style" element={<StyleClone />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
