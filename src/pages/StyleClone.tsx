@@ -105,9 +105,10 @@ export default function StyleClone() {
   }, [])
 
   // ── Deep Analysis (Extraction → Filter → PUT → Monitor) ──
-  const handleAnalyze = async () => {
-    if (!username.trim()) return
-    const clean = username.replace('@', '')
+  const handleAnalyze = async (overrideUsername?: string) => {
+    const target = overrideUsername || username
+    if (!target.trim()) return
+    const clean = target.replace('@', '')
     setAnalyzing(true)
     setError('')
     setUserInfo(null)
@@ -480,7 +481,7 @@ export default function StyleClone() {
                 />
               </div>
               <button
-                onClick={handleAnalyze}
+                onClick={() => handleAnalyze()}
                 disabled={analyzing || !username.trim()}
                 className="btn btn-primary px-6 disabled:opacity-50"
               >
@@ -677,6 +678,14 @@ export default function StyleClone() {
                             {monitors.some(m => m.xUsername === style.xUsername) ? 'CANLI' : 'Takip'}
                           </button>
                         )}
+                        <button
+                          onClick={e => { e.stopPropagation(); setUsername(style.xUsername); handleAnalyze(style.xUsername) }}
+                          disabled={analyzing}
+                          className="btn text-[10px] py-1 px-2 text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 disabled:opacity-50"
+                          title="Stili ve DNA'yı yeniden analiz et"
+                        >
+                          {analyzing && username === style.xUsername ? '...' : 'Restyle'}
+                        </button>
                         <button
                           onClick={e => { e.stopPropagation(); setComposeStyle(style.xUsername); setTab('compose') }}
                           className="btn text-[10px] py-1 px-2"
