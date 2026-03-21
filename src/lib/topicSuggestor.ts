@@ -32,6 +32,7 @@ function getCampaignTopic(): TopicSuggestion {
 }
 
 export const TOPIC_CATEGORIES = [
+  { key: 'tumu', label: 'Tümü' },
   { key: 'siyaset', label: 'Siyaset' },
   { key: 'gundem', label: 'Gündem' },
   { key: 'ekonomi', label: 'Ekonomi' },

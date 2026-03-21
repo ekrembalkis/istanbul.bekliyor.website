@@ -58,7 +58,7 @@ export default function StyleClone() {
 
   // ── Viral tweet discovery (quote mode) ──
   const [viralTweets, setViralTweets] = useState<{ id: string; text: string; author: string; likeCount: number; retweetCount: number }[]>([])
-  const [viralCategory, setViralCategory] = useState<TopicCategory>('siyaset')
+  const [viralCategory, setViralCategory] = useState<TopicCategory>('tumu')
   const [viralLoading, setViralLoading] = useState(false)
 
   // ── Manual ──
