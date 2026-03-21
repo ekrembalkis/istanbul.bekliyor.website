@@ -142,7 +142,6 @@ STIL DNA KURALLARI:
 - ${styleRules}
 
 X ALGORITMASI KURALLARI:
-- ${mode === 'reply' ? '30-150' : '50-280'} karakter arasi optimal
 - Asiri noktalama kullanma
 ${mode !== 'reply' ? '- Yeterli icerik/substance olmali (cok kisa olmasin)' : ''}
 
