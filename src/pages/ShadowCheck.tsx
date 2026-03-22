@@ -1,0 +1,233 @@
+import { useState, useEffect } from 'react'
+import { runFullCheck, runQuickCheck } from '../lib/shadowBanDetector'
+import type { ShadowBanRecord, CheckProgress, OverallStatus } from '../lib/shadowBanDetector'
+import { getLatestCheck, getShadowHistory } from '../lib/shadowBanHistory'
+import type { CheckResult } from '../lib/shadowBanHistory'
+import { Link } from 'react-router-dom'
+
+const STATUS_CONFIG: Record<OverallStatus, { label: string; color: string; bg: string }> = {
+  clean: { label: 'Temiz', color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+  suspicious: { label: 'Şüpheli', color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20' },
+  likely_banned: { label: 'Muhtemel Ban', color: 'text-orange-500', bg: 'bg-orange-500/10 border-orange-500/20' },
+  confirmed_banned: { label: 'Onaylı Shadow Ban', color: 'text-red-500', bg: 'bg-red-500/10 border-red-500/20' },
+}
+
+const LAYER_LABELS: Record<string, { name: string; description: string }> = {
+  monitorProbe: { name: 'Monitor Probe', description: 'X\'in kendi shadow ban sinyali' },
+  searchBan: { name: 'Search Ban', description: 'Tweet\'ler aramada görünüyor mu' },
+  ghostBan: { name: 'Ghost Ban', description: 'Reply\'lar thread\'lerde görünüyor mu' },
+  engagementDrop: { name: 'Engagement', description: 'Etkileşim oranlarında ani düşüş var mı' },
+  profileVisible: { name: 'Profil', description: 'Profil tam görünür mü' },
+}
+
+function CheckIcon({ status }: { status: CheckResult['status'] }) {
+  switch (status) {
+    case 'pass': return <span className="text-emerald-500 text-lg">&#10003;</span>
+    case 'fail': return <span className="text-red-500 text-lg">&#10007;</span>
+    case 'inconclusive': return <span className="text-amber-400 text-lg">&#8212;</span>
+    case 'skipped': return <span className="text-slate-300 dark:text-slate-600 text-lg">&#8226;</span>
+    case 'error': return <span className="text-red-400 text-lg">!</span>
+  }
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'az once'
+  if (mins < 60) return `${mins} dk once`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs} saat once`
+  return `${Math.floor(hrs / 24)} gun once`
+}
+
+export default function ShadowCheck() {
+  const [username, setUsername] = useState('istbekliyor')
+  const [result, setResult] = useState<ShadowBanRecord | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [mode, setMode] = useState<'idle' | 'quick' | 'full'>('idle')
+  const [progress, setProgress] = useState<CheckProgress | null>(null)
+  const [error, setError] = useState('')
+  const [history, setHistory] = useState<ShadowBanRecord[]>([])
+
+  // Load latest check on mount / username change
+  useEffect(() => {
+    const clean = username.replace('@', '')
+    const latest = getLatestCheck(clean)
+    if (latest) setResult(latest)
+    else setResult(null)
+    setHistory(getShadowHistory(clean).slice(0, 10))
+  }, [username])
+
+  async function handleCheck(type: 'quick' | 'full') {
+    setLoading(true)
+    setMode(type)
+    setError('')
+    setProgress(null)
+
+    try {
+      const clean = username.replace('@', '')
+      const fn = type === 'quick' ? runQuickCheck : runFullCheck
+      const res = await fn(clean, p => setProgress(p))
+      setResult(res)
+      setHistory(getShadowHistory(clean).slice(0, 10))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Bilinmeyen hata')
+    } finally {
+      setLoading(false)
+      setMode('idle')
+      setProgress(null)
+    }
+  }
+
+  const statusCfg = result ? STATUS_CONFIG[result.overall] : null
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-800 dark:text-white">Shadow Ban Dedektoru</h1>
+          <p className="text-xs text-slate-400 mt-1">5 katmanli hesap sagligi analizi</p>
+        </div>
+        <Link to="/" className="text-xs text-slate-400 hover:text-brand-red transition-colors">&larr; Panel</Link>
+      </div>
+
+      {/* Username Input + Actions */}
+      <div className="card p-5">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">@</span>
+            <input
+              type="text"
+              value={username}
+              onChange={e => setUsername(e.target.value.replace('@', '').trim())}
+              placeholder="istbekliyor"
+              className="w-full pl-8 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-red/30 font-mono"
+              disabled={loading}
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleCheck('quick')}
+              disabled={loading || !username}
+              className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/[0.10] transition-colors disabled:opacity-40"
+            >
+              {loading && mode === 'quick' ? 'Kontrol...' : 'Hizli Kontrol'}
+            </button>
+            <button
+              onClick={() => handleCheck('full')}
+              disabled={loading || !username}
+              className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-brand-red text-white hover:bg-brand-red-dark transition-colors disabled:opacity-40"
+            >
+              {loading && mode === 'full' ? 'Kontrol...' : 'Tam Kontrol'}
+            </button>
+          </div>
+        </div>
+
+        {/* Progress indicator */}
+        {loading && progress && (
+          <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
+            <span className="inline-block w-3 h-3 rounded-full bg-brand-red animate-pulse" />
+            Katman {progress.layer}: {progress.label}...
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-3 text-xs text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg p-3">{error}</div>
+        )}
+      </div>
+
+      {/* Result Overview */}
+      {result && statusCfg && (
+        <div className={`card p-5 border ${statusCfg.bg}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`text-3xl font-bold ${statusCfg.color}`}>
+                {result.overall === 'clean' ? '&#9679;' : result.overall === 'confirmed_banned' ? '&#9888;' : '&#9679;'}
+              </div>
+              <div>
+                <div className={`text-lg font-bold ${statusCfg.color}`}>{statusCfg.label}</div>
+                <div className="text-xs text-slate-400">@{result.username} &middot; {timeAgo(result.checkedAt)}</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-slate-800 dark:text-white">%{result.confidence}</div>
+              <div className="text-[10px] text-slate-400">guvenilirlik</div>
+            </div>
+          </div>
+
+          {/* Engagement summary */}
+          {result.engagement && (
+            <div className="mt-4 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+              <span>Ort. {result.engagement.avgViews.toLocaleString()} goruntulenme</span>
+              <span>%{result.engagement.avgEngRate} engagement</span>
+              <span className={
+                result.engagement.trend === 'up' ? 'text-emerald-500' :
+                result.engagement.trend === 'down' ? 'text-red-500' : 'text-slate-400'
+              }>
+                {result.engagement.trend === 'up' ? '&#8593; yukselis' :
+                 result.engagement.trend === 'down' ? '&#8595; dusus' : '&#8596; stabil'}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 5 Layer Detail Cards */}
+      {result && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {(Object.entries(result.checks) as [string, CheckResult][]).map(([key, check]) => {
+            const layer = LAYER_LABELS[key]
+            if (!layer) return null
+            return (
+              <div key={key} className="card p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs font-bold text-slate-500 dark:text-slate-400 tracking-wider">
+                    {layer.name}
+                  </div>
+                  <CheckIcon status={check.status} />
+                </div>
+                <p className="text-[11px] text-slate-400 mb-2">{layer.description}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300">{check.detail}</p>
+                {check.confidence > 0 && (
+                  <div className="mt-2 text-[10px] text-slate-400">
+                    Guvenilirlik: %{check.confidence}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* History */}
+      {history.length > 1 && (
+        <section className="card p-5">
+          <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-3">Kontrol Gecmisi</h2>
+          <div className="space-y-2">
+            {history.map((r, i) => {
+              const cfg = STATUS_CONFIG[r.overall]
+              return (
+                <div key={r.checkedAt + i} className="flex items-center justify-between text-xs py-2 border-b border-slate-100 dark:border-white/[0.04] last:border-0">
+                  <div className="flex items-center gap-2">
+                    <span className={`font-semibold ${cfg.color}`}>{cfg.label}</span>
+                    <span className="text-slate-400">%{r.confidence}</span>
+                  </div>
+                  <span className="text-slate-400 font-mono">{timeAgo(r.checkedAt)}</span>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Empty state */}
+      {!result && !loading && (
+        <div className="card p-12 text-center">
+          <div className="text-4xl mb-4 text-slate-300 dark:text-slate-600">&#9737;</div>
+          <p className="text-sm text-slate-400">Bir hesap adi girin ve kontrol baslatın</p>
+        </div>
+      )}
+    </div>
+  )
+}

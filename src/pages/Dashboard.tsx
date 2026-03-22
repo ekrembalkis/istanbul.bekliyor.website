@@ -1,7 +1,19 @@
+import { useState } from 'react'
 import { getDayCount, formatDate, getDateForDay, getTimeBreakdown } from '../lib/utils'
 import { getDayPlan, getNextMilestone, isMilestoneDay } from '../data/campaign'
 import { CopyBtn } from '../components/CopyBtn'
 import { getPerformanceSummary, getPublishedTweets } from '../lib/publishTracker'
+import { getLatestCheck } from '../lib/shadowBanHistory'
+import { runQuickCheck } from '../lib/shadowBanDetector'
+import type { ShadowBanRecord, OverallStatus } from '../lib/shadowBanDetector'
+import { Link } from 'react-router-dom'
+
+const SHADOW_STATUS: Record<OverallStatus, { label: string; color: string; dot: string }> = {
+  clean: { label: 'Temiz', color: 'text-emerald-500', dot: 'bg-emerald-500' },
+  suspicious: { label: 'Supeli', color: 'text-amber-500', dot: 'bg-amber-500' },
+  likely_banned: { label: 'Muhtemel Ban', color: 'text-orange-500', dot: 'bg-orange-500' },
+  confirmed_banned: { label: 'Shadow Ban', color: 'text-red-500', dot: 'bg-red-500' },
+}
 
 export default function Dashboard() {
   const day = getDayCount()
@@ -10,6 +22,9 @@ export default function Dashboard() {
   const milestone = getNextMilestone(day)
   const isSpecial = isMilestoneDay(day)
   const today = getDateForDay(day)
+
+  const [shadowResult, setShadowResult] = useState<ShadowBanRecord | null>(() => getLatestCheck('istbekliyor'))
+  const [shadowLoading, setShadowLoading] = useState(false)
 
   const displayName = `İSTANBUL BEKLİYOR · GÜN ${day}`
   const bio = `İstanbul ${day} gündür seçilmiş başkanını bekliyor. Her gün bir görsel. Her görsel bir ses. ⏳`
@@ -225,6 +240,109 @@ export default function Dashboard() {
           </section>
         )
       })()}
+
+      {/* Shadow Ban Health Widget */}
+      <section className="card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400">Hesap Sagligi</h2>
+            <p className="text-[10px] text-slate-400 mt-0.5">@istbekliyor shadow ban kontrolu</p>
+          </div>
+          {shadowResult && (() => {
+            const cfg = SHADOW_STATUS[shadowResult.overall]
+            return (
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                <span className={`text-sm font-bold ${cfg.color}`}>{cfg.label}</span>
+                <span className="text-[10px] text-slate-400">%{shadowResult.confidence}</span>
+              </div>
+            )
+          })()}
+        </div>
+
+        {shadowResult ? (
+          <div className="space-y-3">
+            {/* Layer status pills */}
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(shadowResult.checks).map(([key, check]) => {
+                const labels: Record<string, string> = {
+                  monitorProbe: 'K1', searchBan: 'K2', ghostBan: 'K3',
+                  engagementDrop: 'K4', profileVisible: 'K5',
+                }
+                const colors: Record<string, string> = {
+                  pass: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20',
+                  fail: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20',
+                  inconclusive: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20',
+                  skipped: 'bg-slate-50 dark:bg-white/[0.03] text-slate-400 border-slate-200 dark:border-white/[0.06]',
+                  error: 'bg-red-50 dark:bg-red-500/10 text-red-400 border-red-200 dark:border-red-500/20',
+                }
+                const icons: Record<string, string> = {
+                  pass: '\u2713', fail: '\u2717', inconclusive: '\u2014', skipped: '\u2022', error: '!',
+                }
+                return (
+                  <span key={key} className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold border ${colors[check.status]}`}>
+                    {labels[key]} {icons[check.status]}
+                  </span>
+                )
+              })}
+            </div>
+
+            {/* Engagement line */}
+            {shadowResult.engagement && (
+              <div className="text-[11px] text-slate-400">
+                Ort. {shadowResult.engagement.avgViews.toLocaleString()} view &middot; %{shadowResult.engagement.avgEngRate} engagement
+                {shadowResult.engagement.trend === 'up' && <span className="text-emerald-500 ml-1">&#8593;</span>}
+                {shadowResult.engagement.trend === 'down' && <span className="text-red-500 ml-1">&#8595;</span>}
+                {shadowResult.engagement.trend === 'stable' && <span className="text-slate-400 ml-1">&#8596;</span>}
+              </div>
+            )}
+
+            {/* Timestamp + actions */}
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-slate-400">
+                Son kontrol: {new Date(shadowResult.checkedAt).toLocaleString('tr-TR')}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async () => {
+                    setShadowLoading(true)
+                    try {
+                      const res = await runQuickCheck('istbekliyor')
+                      setShadowResult(res)
+                    } catch { /* silent */ }
+                    setShadowLoading(false)
+                  }}
+                  disabled={shadowLoading}
+                  className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 hover:text-brand-red transition-colors disabled:opacity-40"
+                >
+                  {shadowLoading ? 'Kontrol...' : 'Hizli Kontrol'}
+                </button>
+                <Link to="/shadow-check" className="text-[10px] font-semibold text-brand-red hover:text-brand-red-dark transition-colors">
+                  Detayli Analiz &rarr;
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-400">Henuz kontrol yapilmadi</span>
+            <button
+              onClick={async () => {
+                setShadowLoading(true)
+                try {
+                  const res = await runQuickCheck('istbekliyor')
+                  setShadowResult(res)
+                } catch { /* silent */ }
+                setShadowLoading(false)
+              }}
+              disabled={shadowLoading}
+              className="text-xs font-semibold text-brand-red hover:text-brand-red-dark transition-colors disabled:opacity-40"
+            >
+              {shadowLoading ? 'Kontrol...' : 'Simdi Kontrol Et'}
+            </button>
+          </div>
+        )}
+      </section>
 
       {/* Daily Workflow */}
       <section className="card p-6">

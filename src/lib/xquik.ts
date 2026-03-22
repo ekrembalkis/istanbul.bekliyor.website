@@ -383,6 +383,24 @@ export interface TweetInfo {
   author?: { username: string; name?: string }
 }
 
+/** Full tweet metrics for shadow ban detection */
+export interface TweetMetrics {
+  id: string
+  text: string
+  likeCount: number
+  retweetCount: number
+  replyCount: number
+  quoteCount: number
+  viewCount: number
+  bookmarkCount: number
+  createdAt: string
+}
+
+/** Fetch a tweet with full engagement metrics */
+export async function lookupTweetFull(tweetId: string): Promise<{ tweet: TweetMetrics; author?: XUser }> {
+  return api<{ tweet: TweetMetrics; author?: XUser }>(`/x/tweets/${tweetId}`)
+}
+
 /** Fetch a tweet by ID or URL */
 export async function lookupTweet(tweetIdOrUrl: string): Promise<TweetInfo> {
   // Extract ID from URL if needed
@@ -530,19 +548,25 @@ export interface PublishResult {
   success: boolean
 }
 
-/** Publish a tweet to X */
+/** Publish a tweet to X (retries on 503 transient errors) */
 export async function publishTweet(account: string, text: string, opts?: {
   reply_to_tweet_id?: string
   media_ids?: string[]
 }): Promise<PublishResult> {
-  return api<PublishResult>('/x/tweets', {
-    method: 'POST',
-    body: {
-      account: account.replace('@', ''),
-      text,
-      ...opts,
+  const body = { account: account.replace('@', ''), text, ...opts }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await api<PublishResult>('/x/tweets', { method: 'POST', body })
+    } catch (e: any) {
+      const isRetryable = e.message?.includes('Temporary') || e.message?.includes('503') || e.message?.includes('transient')
+      if (isRetryable && attempt < 2) {
+        await new Promise(r => setTimeout(r, 3000 * (attempt + 1)))
+        continue
+      }
+      throw e
     }
-  })
+  }
+  throw new Error('Tweet gönderilemedi — 3 deneme başarısız')
 }
 
 /** Delete a published tweet */
