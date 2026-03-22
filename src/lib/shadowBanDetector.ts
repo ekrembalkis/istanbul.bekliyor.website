@@ -12,69 +12,86 @@ export type { ShadowBanRecord, CheckResult, OverallStatus, EngagementSnapshot }
 // 422 "shadow_account" = confirmed shadow ban.
 
 async function probeMonitor(username: string): Promise<CheckResult> {
-  try {
-    // Check existing monitors
-    const { monitors } = await listMonitors()
-    const existing = monitors.find(m => m.username === username)
+  const target = username.toLowerCase().trim()
 
+  // Step 1: Check if already monitored (= no shadow ban, monitor was created before)
+  try {
+    const { monitors } = await listMonitors()
+    const existing = monitors.find(m =>
+      (m.username || m.xUsername || '').toLowerCase().trim() === target
+    )
     if (existing) {
-      // Already monitored = no shadow ban (monitor creation succeeded before)
       return { status: 'pass', detail: 'Mevcut monitor aktif — shadow ban yok', confidence: 95 }
     }
+  } catch {
+    // listMonitors failed (subscription, network) — continue to create attempt
+  }
 
-    // Need to free a slot if at limit
-    let freedMonitorId: string | null = null
-    try {
-      const probe = await createMonitor(username)
-      // Success = no shadow ban. Clean up immediately.
-      await deleteMonitor(probe.id)
-      return { status: 'pass', detail: 'Monitor probe başarılı — shadow ban yok', confidence: 95 }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-
-      if (msg.includes('shadow_account') || msg.includes('shadow')) {
-        return { status: 'fail', detail: 'X shadow ban tespit etti', confidence: 95 }
-      }
-
-      if (msg.includes('monitor_limit_reached')) {
-        // Free a non-target monitor, probe, then restore
-        const expendable = monitors.find(m => m.username !== username)
-        if (expendable) {
-          freedMonitorId = expendable.id
-          const savedUsername = expendable.username
-          await deleteMonitor(expendable.id)
-
-          try {
-            const probe = await createMonitor(username)
-            await deleteMonitor(probe.id)
-            // Restore the original monitor
-            try { await createMonitor(savedUsername) } catch { /* best effort */ }
-            return { status: 'pass', detail: 'Monitor probe başarılı (slot geçici serbest bırakıldı)', confidence: 95 }
-          } catch (probeErr: unknown) {
-            // Restore first
-            try { await createMonitor(savedUsername) } catch { /* best effort */ }
-            const probeMsg = probeErr instanceof Error ? probeErr.message : String(probeErr)
-            if (probeMsg.includes('shadow_account') || probeMsg.includes('shadow')) {
-              return { status: 'fail', detail: 'X shadow ban tespit etti', confidence: 95 }
-            }
-            if (probeMsg.includes('not_found')) {
-              return { status: 'fail', detail: 'Hesap bulunamadı', confidence: 90 }
-            }
-            return { status: 'error', detail: `Probe hatası: ${probeMsg}`, confidence: 0 }
-          }
-        }
-        return { status: 'skipped', detail: 'Monitor slotu yok ve serbest bırakılacak monitor bulunamadı', confidence: 0 }
-      }
-
-      if (msg.includes('not_found')) {
-        return { status: 'fail', detail: 'Hesap X\'te bulunamadı', confidence: 90 }
-      }
-
-      return { status: 'error', detail: `Monitor hatası: ${msg}`, confidence: 0 }
-    }
+  // Step 2: Try to create a probe monitor
+  try {
+    const probe = await createMonitor(target)
+    await deleteMonitor(probe.id)
+    return { status: 'pass', detail: 'Monitor probe basarili — shadow ban yok', confidence: 95 }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
-    return { status: 'error', detail: `Beklenmeyen hata: ${msg}`, confidence: 0 }
+    const msgLower = msg.toLowerCase()
+
+    // Shadow ban detected
+    if (msgLower.includes('shadow')) {
+      return { status: 'fail', detail: 'X shadow ban tespit etti', confidence: 95 }
+    }
+
+    // Account not found
+    if (msgLower.includes('not_found') || msgLower.includes('not found')) {
+      return { status: 'fail', detail: 'Hesap X\'te bulunamadi', confidence: 90 }
+    }
+
+    // Monitor limit reached — try slot swap
+    if (msgLower.includes('limit')) {
+      try {
+        const { monitors } = await listMonitors()
+
+        // Double-check: maybe target IS already monitored
+        const alreadyExists = monitors.find(m =>
+          (m.username || m.xUsername || '').toLowerCase().trim() === target
+        )
+        if (alreadyExists) {
+          return { status: 'pass', detail: 'Mevcut monitor aktif — shadow ban yok', confidence: 95 }
+        }
+
+        // Find a non-target monitor to temporarily free
+        const expendable = monitors.find(m =>
+          (m.username || m.xUsername || '').toLowerCase().trim() !== target
+        )
+        if (expendable) {
+          const savedUsername = expendable.username || expendable.xUsername || ''
+          await deleteMonitor(expendable.id)
+          try {
+            const probe = await createMonitor(target)
+            await deleteMonitor(probe.id)
+            try { await createMonitor(savedUsername) } catch { /* best effort restore */ }
+            return { status: 'pass', detail: 'Monitor probe basarili (slot gecici serbest birakildi)', confidence: 95 }
+          } catch (probeErr: unknown) {
+            try { await createMonitor(savedUsername) } catch { /* best effort restore */ }
+            const probeMsg = probeErr instanceof Error ? probeErr.message : String(probeErr)
+            if (probeMsg.toLowerCase().includes('shadow')) {
+              return { status: 'fail', detail: 'X shadow ban tespit etti', confidence: 95 }
+            }
+            return { status: 'error', detail: `Probe hatasi: ${probeMsg}`, confidence: 0 }
+          }
+        }
+      } catch {
+        // listMonitors failed during retry
+      }
+      return { status: 'skipped', detail: 'Monitor limiti dolu, slot acilamadi', confidence: 0 }
+    }
+
+    // Subscription required
+    if (msgLower.includes('402') || msgLower.includes('subscription')) {
+      return { status: 'skipped', detail: 'API aboneligi gerekli', confidence: 0 }
+    }
+
+    return { status: 'error', detail: `Monitor hatasi: ${msg}`, confidence: 0 }
   }
 }
 

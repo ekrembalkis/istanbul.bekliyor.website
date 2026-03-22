@@ -60,7 +60,10 @@ async function api<T = unknown>(path: string, options?: { method?: string; body?
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(err.message || err.error || `API error ${res.status}`)
+    // Include both error code and message so callers can match on either
+    const code = err.error || ''
+    const message = err.message || res.statusText
+    throw new Error(code ? `[${code}] ${message}` : message)
   }
 
   if (res.status === 204) return {} as T
