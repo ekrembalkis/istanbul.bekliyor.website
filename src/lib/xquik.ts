@@ -553,6 +553,87 @@ export async function deletePublishedTweet(tweetId: string, account: string): Pr
   })
 }
 
+// ── Automations ──
+
+export interface AutomationFlow {
+  id: string
+  name: string
+  triggerType: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  steps?: AutomationStep[]
+  recentRuns?: AutomationRun[]
+}
+
+export interface AutomationStep {
+  id: string
+  stepType: string
+  actionType?: string
+  branch: string
+  position: number
+  config?: Record<string, unknown>
+}
+
+export interface AutomationRun {
+  id: string
+  status: string
+  startedAt: string
+  completedAt?: string
+}
+
+/** List automation flows */
+export async function listAutomations(): Promise<{ items: AutomationFlow[] }> {
+  return api<{ items: AutomationFlow[] }>('/automations')
+}
+
+/** Get automation flow details */
+export async function getAutomation(id: string): Promise<AutomationFlow> {
+  return api<AutomationFlow>(`/automations/${id}`)
+}
+
+/** Create automation flow */
+export async function createAutomation(opts: {
+  name: string
+  triggerType: string
+  triggerConfig?: Record<string, unknown>
+  steps?: Array<{ stepType: string; actionType?: string; branch: string; config?: Record<string, unknown> }>
+  xAccountId?: string
+}): Promise<AutomationFlow> {
+  return api<AutomationFlow>('/automations', { method: 'POST', body: opts })
+}
+
+/** Update automation flow (activate/deactivate/rename) */
+export async function updateAutomation(id: string, opts: {
+  expectedUpdatedAt: string
+  isActive?: boolean
+  name?: string
+  triggerType?: string
+  triggerConfig?: Record<string, unknown>
+}): Promise<AutomationFlow> {
+  return api<AutomationFlow>(`/automations/${id}`, { method: 'PATCH', body: opts })
+}
+
+/** Delete automation flow */
+export async function deleteAutomation(id: string): Promise<void> {
+  await api(`/automations/${id}`, { method: 'DELETE' })
+}
+
+/** Add step to automation flow */
+export async function addAutomationStep(flowId: string, opts: {
+  stepType: string
+  actionType?: string
+  branch: string
+  config?: Record<string, unknown>
+}): Promise<{ created: AutomationStep; steps: AutomationStep[] }> {
+  return api(`/automations/${flowId}/steps`, { method: 'POST', body: opts })
+}
+
+/** Test run automation flow */
+export async function testAutomation(id: string): Promise<{ runId: string }> {
+  return api<{ runId: string }>(`/automations/${id}/test`, { method: 'POST' })
+}
+
 // ── Helpers ──
 
 /** Validate X username format: 1-15 chars, only [A-Za-z0-9_] */

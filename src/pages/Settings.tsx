@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { getDayCount } from '../lib/utils'
 import { DAY_PLANS } from '../data/campaign'
 import { CopyBtn } from '../components/CopyBtn'
-import { getAccount, getConnectedAccounts, connectXAccount, disconnectXAccount } from '../lib/xquik'
-import type { XquikAccount, XAccount } from '../lib/xquik'
+import { getAccount, getConnectedAccounts, connectXAccount, disconnectXAccount, listAutomations, createAutomation, updateAutomation, deleteAutomation, testAutomation } from '../lib/xquik'
+import type { XquikAccount, XAccount, AutomationFlow } from '../lib/xquik'
 import { getCostSummary, calculateGeminiCost, resetCostTracker } from '../lib/costTracker'
 import type { GeminiUsage } from '../lib/costTracker'
 import { fetchAlgorithmData, isConfirmedSignal } from '../lib/algorithmData'
@@ -74,6 +74,65 @@ export default function Settings() {
   const [connectForm, setConnectForm] = useState({ username: '', email: '', password: '', totp: '' })
   const [connecting, setConnecting] = useState(false)
 
+  // ── Automations ──
+  const [automations, setAutomations] = useState<AutomationFlow[]>([])
+  const [autoLoading, setAutoLoading] = useState(true)
+  const [autoError, setAutoError] = useState('')
+  const [creatingAuto, setCreatingAuto] = useState(false)
+
+  const loadAutomations = () => {
+    setAutoLoading(true)
+    listAutomations()
+      .then(res => setAutomations(res.items || []))
+      .catch(e => setAutoError(e.message))
+      .finally(() => setAutoLoading(false))
+  }
+
+  const handleCreateAutomation = async (name: string, triggerType: string) => {
+    setCreatingAuto(true)
+    setAutoError('')
+    try {
+      await createAutomation({ name, triggerType })
+      loadAutomations()
+    } catch (e: any) {
+      setAutoError(e.message)
+    }
+    setCreatingAuto(false)
+  }
+
+  const handleToggleAutomation = async (flow: AutomationFlow) => {
+    try {
+      await updateAutomation(flow.id, {
+        expectedUpdatedAt: flow.updatedAt,
+        isActive: !flow.isActive,
+      })
+      loadAutomations()
+    } catch (e: any) {
+      setAutoError(e.message)
+    }
+  }
+
+  const handleDeleteAutomation = async (id: string, name: string) => {
+    if (!confirm(`"${name}" otomasyonunu sil?`)) return
+    try {
+      await deleteAutomation(id)
+      loadAutomations()
+    } catch (e: any) {
+      setAutoError(e.message)
+    }
+  }
+
+  const handleTestAutomation = async (id: string) => {
+    setAutoError('')
+    try {
+      await testAutomation(id)
+      setAutoError('Test çalıştırıldı')
+      setTimeout(() => setAutoError(''), 3000)
+    } catch (e: any) {
+      setAutoError(e.message)
+    }
+  }
+
   const loadXAccounts = () => {
     setXLoading(true)
     getConnectedAccounts()
@@ -121,6 +180,7 @@ export default function Settings() {
       .then(setAlgoData)
       .finally(() => setAlgoLoading(false))
     loadXAccounts()
+    loadAutomations()
   }, [])
 
   useEffect(() => {
@@ -360,6 +420,89 @@ export default function Settings() {
             <div className="text-[10px] text-slate-400">
               Bilgiler Xquik API'ye gönderilir. Şifreler bu panelde saklanmaz.
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* ═══════════ AUTOMATIONS ═══════════ */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 tracking-wider">OTOMASYONLAR</h2>
+          <span className="text-[10px] text-slate-400">Ücretsiz: max 2 flow</span>
+        </div>
+
+        {autoError && (
+          <div className={`rounded-xl p-3 border mb-4 ${autoError === 'Test çalıştırıldı' ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20' : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20'}`}>
+            <div className={`text-xs ${autoError === 'Test çalıştırıldı' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{autoError}</div>
+          </div>
+        )}
+
+        {autoLoading ? (
+          <div className="text-xs text-slate-400 animate-pulse">Yükleniyor...</div>
+        ) : (
+          <div className="space-y-3">
+            {automations.length === 0 ? (
+              <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-6 border border-slate-100 dark:border-white/[0.06] text-center">
+                <div className="text-sm text-slate-400">Otomasyon yok</div>
+                <div className="text-[10px] text-slate-400 mt-1">Trend takibi veya zamanlı tweet için otomasyon oluşturun</div>
+              </div>
+            ) : (
+              automations.map(flow => (
+                <div key={flow.id} className="flex items-center justify-between bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 border border-slate-100 dark:border-white/[0.06]">
+                  <div className="flex items-center gap-3">
+                    <span className={`w-2.5 h-2.5 rounded-full ${flow.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                    <div>
+                      <div className="text-sm font-bold text-slate-700 dark:text-slate-200">{flow.name}</div>
+                      <div className="text-[10px] text-slate-400">Tetik: {flow.triggerType} | {flow.isActive ? 'Aktif' : 'Pasif'}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleTestAutomation(flow.id)}
+                      className="text-[10px] text-blue-500 hover:text-blue-600 transition-colors"
+                    >
+                      Test
+                    </button>
+                    <button
+                      onClick={() => handleToggleAutomation(flow)}
+                      className={`text-[10px] px-2 py-1 rounded-md border transition-all ${
+                        flow.isActive
+                          ? 'text-amber-600 border-amber-200 hover:bg-amber-50'
+                          : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                      }`}
+                    >
+                      {flow.isActive ? 'Durdur' : 'Başlat'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAutomation(flow.id, flow.name)}
+                      className="text-[10px] text-slate-400 hover:text-red-500 transition-colors"
+                    >
+                      Sil
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+
+            {/* Quick create buttons */}
+            {automations.length < 2 && (
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <button
+                  onClick={() => handleCreateAutomation('Trend Tweet', 'schedule')}
+                  disabled={creatingAuto}
+                  className="btn w-full justify-center disabled:opacity-50 text-xs"
+                >
+                  {creatingAuto ? '...' : 'Zamanlı Tweet Flow'}
+                </button>
+                <button
+                  onClick={() => handleCreateAutomation('Trend Takip', 'webhook')}
+                  disabled={creatingAuto}
+                  className="btn w-full justify-center disabled:opacity-50 text-xs"
+                >
+                  {creatingAuto ? '...' : 'Webhook Flow'}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
