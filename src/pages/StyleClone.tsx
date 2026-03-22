@@ -15,6 +15,7 @@ import type { StyleLibraryEntry } from '../lib/styleLibrary'
 import { getTopicSuggestions, TOPIC_CATEGORIES } from '../lib/topicSuggestor'
 import type { TopicSuggestion, TopicCategory } from '../lib/topicSuggestor'
 import { trackGeminiUsage } from '../lib/costTracker'
+import { trackPublished } from '../lib/publishTracker'
 import { checkCampaignRules, getScoreColor, getScoreBg, getDayCount } from '../lib/utils'
 import { getDayPlan } from '../data/campaign'
 import { scoreDraft } from '../lib/xquik'
@@ -104,10 +105,71 @@ export default function StyleClone() {
       const account = xAccounts[0].xUsername
       const result = await publishTweet(account, tweetText)
       setPublishSuccess(prev => ({ ...prev, [index]: result.tweetId }))
+      trackPublished({
+        tweetId: result.tweetId,
+        text: tweetText,
+        publishedAt: new Date().toISOString(),
+        account,
+        topic: composeTopic || undefined,
+        tone: composeTone || undefined,
+        styleUsername: composeStyle || undefined,
+        lengthHint: lengthHint || undefined,
+      })
     } catch (e: any) {
       setPublishError(e.message || 'Paylaşım başarısız')
     }
     setPublishing(null)
+  }
+
+  // ── Trend-to-Tweet (one-click) ──
+  const [trendLoading, setTrendLoading] = useState(false)
+
+  const handleTrendGenerate = async () => {
+    if (!composeStyle) { setError('Önce bir stil seçin'); return }
+    setTrendLoading(true)
+    setError('')
+    setGeneratedTweets([])
+    setPublishSuccess({})
+    try {
+      const radar = await getRadarTopics('TR', 6, 10)
+      const items = radar.items || []
+      if (items.length === 0) { setError('Trend bulunamadı'); setTrendLoading(false); return }
+      // Pick top trend
+      const top = items[0]
+      setComposeTopic(top.title)
+      setTopicContext(`Trending: ${top.title} (kaynak: ${top.source}, skor: ${top.score})`)
+
+      const styleDNA = library.find(e => e.username === composeStyle)?.personalityDNA
+      const contextParts: string[] = []
+      if (composeStyle === 'istbekliyor') {
+        const day = getDayCount()
+        const plan = getDayPlan(day)
+        contextParts.push(`Kampanya gunü: GÜN ${day}, tema: ${plan.theme}, sahne: ${plan.scene}`)
+      }
+      contextParts.push(`Trending topic: ${top.title} (source: ${top.source}, category: ${top.category})`)
+      if (userHint.trim()) contextParts.push(`Kullanıcı notu: ${userHint.trim()}`)
+
+      const result = await generateTweet({
+        styleUsername: composeStyle,
+        topic: top.title,
+        tone: composeTone,
+        goal: composeGoal,
+        count: tweetCount,
+        cloneMode,
+        topicContext: contextParts.join('\n'),
+        mode: 'tweet',
+        lengthHint: lengthHint || undefined,
+        personalityDNA: styleDNA,
+      })
+      setGeneratedTweets(result.tweets)
+      if (result.geminiUsage) trackGeminiUsage(result.geminiUsage)
+      incrementGenerated(composeStyle)
+      addTopic(composeStyle, top.title)
+      setLibrary(getLibrary())
+    } catch (e: any) {
+      setError(e.message || 'Trend üretim başarısız')
+    }
+    setTrendLoading(false)
   }
 
   // Load styles, drafts, monitors, and library on mount
@@ -1112,7 +1174,7 @@ export default function StyleClone() {
                     </button>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={handleGetGuidance}
                     disabled={loading || !composeTopic.trim() || !composeStyle || composeMode === 'quote' || composeMode === 'reply'}
@@ -1135,6 +1197,20 @@ export default function StyleClone() {
                       </span>
                     ) : 'Otomatik Üret'}
                   </button>
+                  {composeMode === 'tweet' && (
+                    <button
+                      onClick={handleTrendGenerate}
+                      disabled={trendLoading || !composeStyle}
+                      className="btn w-full justify-center disabled:opacity-50 text-xs bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/20"
+                    >
+                      {trendLoading ? (
+                        <span className="flex items-center gap-1.5">
+                          <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" /><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" className="opacity-75" /></svg>
+                          Trend...
+                        </span>
+                      ) : 'Trend\'den Üret'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

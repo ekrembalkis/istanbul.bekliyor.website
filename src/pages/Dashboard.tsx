@@ -1,6 +1,7 @@
 import { getDayCount, formatDate, getDateForDay, getTimeBreakdown } from '../lib/utils'
 import { getDayPlan, getNextMilestone, isMilestoneDay } from '../data/campaign'
 import { CopyBtn } from '../components/CopyBtn'
+import { getPerformanceSummary, getPublishedTweets } from '../lib/publishTracker'
 
 export default function Dashboard() {
   const day = getDayCount()
@@ -165,6 +166,65 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Performance Summary ── */}
+      {(() => {
+        const published = getPublishedTweets()
+        const perf = getPerformanceSummary()
+        if (published.length === 0) return null
+        return (
+          <section className="card p-6">
+            <div className="section-header">
+              <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400">Yayın Performansı</h2>
+              <span className="text-[10px] text-slate-400">{published.length} tweet yayınlandı</span>
+            </div>
+            {perf ? (
+              <div className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {[
+                    { label: 'Toplam Like', value: perf.totalLikes.toLocaleString(), color: 'text-pink-500' },
+                    { label: 'Toplam Reply', value: perf.totalReplies.toLocaleString(), color: 'text-blue-500' },
+                    { label: 'Toplam RT', value: perf.totalRetweets.toLocaleString(), color: 'text-emerald-500' },
+                    { label: 'Ort. Like', value: perf.avgLikes.toLocaleString(), color: 'text-amber-500' },
+                  ].map(s => (
+                    <div key={s.label} className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-3 border border-slate-100 dark:border-white/[0.06] text-center">
+                      <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+                {perf.best && perf.best.engagement && (
+                  <div className="bg-amber-50 dark:bg-amber-500/5 rounded-xl p-4 border border-amber-200 dark:border-amber-500/20">
+                    <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 tracking-wider mb-2">EN İYİ TWEET</div>
+                    <p className="text-sm text-slate-700 dark:text-slate-200">{perf.best.text}</p>
+                    <div className="flex items-center gap-4 mt-2 text-[10px] text-slate-400">
+                      <span>♥ {perf.best.engagement.likes}</span>
+                      <span>↩ {perf.best.engagement.replies}</span>
+                      <span>↻ {perf.best.engagement.retweets}</span>
+                    </div>
+                  </div>
+                )}
+                {perf.topTopics.length > 0 && (
+                  <div>
+                    <div className="text-[10px] font-bold text-slate-400 tracking-wider mb-2">EN İYİ KONULAR</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {perf.topTopics.map(tp => (
+                        <span key={tp.topic} className="text-[10px] px-2 py-1 rounded-lg bg-slate-50 dark:bg-white/[0.04] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/[0.08]">
+                          {tp.topic} <span className="text-pink-500">♥{tp.avgLikes}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="mt-4 text-xs text-slate-400">
+                Henüz engagement verisi yok. Yayınlanan tweetlerin performansı burada görünecek.
+              </div>
+            )}
+          </section>
+        )
+      })()}
 
       {/* Daily Workflow */}
       <section className="card p-6">
