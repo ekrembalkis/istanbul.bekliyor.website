@@ -291,9 +291,9 @@ export default function Dashboard() {
             {shadowResult.engagement && (
               <div className="text-[11px] text-slate-400">
                 Ort. {shadowResult.engagement.avgViews.toLocaleString()} view &middot; %{shadowResult.engagement.avgEngRate} engagement
-                {shadowResult.engagement.trend === 'up' && <span className="text-emerald-500 ml-1">&#8593;</span>}
-                {shadowResult.engagement.trend === 'down' && <span className="text-red-500 ml-1">&#8595;</span>}
-                {shadowResult.engagement.trend === 'stable' && <span className="text-slate-400 ml-1">&#8596;</span>}
+                {shadowResult.engagement.trend === 'up' && <span className="text-emerald-500 ml-1">{'\u2191'}</span>}
+                {shadowResult.engagement.trend === 'down' && <span className="text-red-500 ml-1">{'\u2193'}</span>}
+                {shadowResult.engagement.trend === 'stable' && <span className="text-slate-400 ml-1">{'\u2194'}</span>}
               </div>
             )}
 

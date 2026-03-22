@@ -22,10 +22,10 @@ const LAYER_LABELS: Record<string, { name: string; description: string }> = {
 
 function CheckIcon({ status }: { status: CheckResult['status'] }) {
   switch (status) {
-    case 'pass': return <span className="text-emerald-500 text-lg">&#10003;</span>
-    case 'fail': return <span className="text-red-500 text-lg">&#10007;</span>
-    case 'inconclusive': return <span className="text-amber-400 text-lg">&#8212;</span>
-    case 'skipped': return <span className="text-slate-300 dark:text-slate-600 text-lg">&#8226;</span>
+    case 'pass': return <span className="text-emerald-500 text-lg">{'\u2713'}</span>
+    case 'fail': return <span className="text-red-500 text-lg">{'\u2717'}</span>
+    case 'inconclusive': return <span className="text-amber-400 text-lg">{'\u2014'}</span>
+    case 'skipped': return <span className="text-slate-300 dark:text-slate-600 text-lg">{'\u2022'}</span>
     case 'error': return <span className="text-red-400 text-lg">!</span>
   }
 }
@@ -143,7 +143,7 @@ export default function ShadowCheck() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className={`text-3xl font-bold ${statusCfg.color}`}>
-                {result.overall === 'clean' ? '&#9679;' : result.overall === 'confirmed_banned' ? '&#9888;' : '&#9679;'}
+                {result.overall === 'clean' ? '\u25CF' : result.overall === 'confirmed_banned' ? '\u26A0' : '\u25CF'}
               </div>
               <div>
                 <div className={`text-lg font-bold ${statusCfg.color}`}>{statusCfg.label}</div>
@@ -165,8 +165,8 @@ export default function ShadowCheck() {
                 result.engagement.trend === 'up' ? 'text-emerald-500' :
                 result.engagement.trend === 'down' ? 'text-red-500' : 'text-slate-400'
               }>
-                {result.engagement.trend === 'up' ? '&#8593; yukselis' :
-                 result.engagement.trend === 'down' ? '&#8595; dusus' : '&#8596; stabil'}
+                {result.engagement.trend === 'up' ? '\u2191 yukselis' :
+                 result.engagement.trend === 'down' ? '\u2193 dusus' : '\u2194 stabil'}
               </span>
             </div>
           )}
@@ -224,7 +224,7 @@ export default function ShadowCheck() {
       {/* Empty state */}
       {!result && !loading && (
         <div className="card p-12 text-center">
-          <div className="text-4xl mb-4 text-slate-300 dark:text-slate-600">&#9737;</div>
+          <div className="text-4xl mb-4 text-slate-300 dark:text-slate-600">{'\u2609'}</div>
           <p className="text-sm text-slate-400">Bir hesap adi girin ve kontrol baslatın</p>
         </div>
       )}

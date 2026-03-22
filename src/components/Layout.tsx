@@ -9,7 +9,7 @@ const navItems = [
   { to: '/calendar', label: 'Takvim' },
   { to: '/archive', label: 'Arşiv' },
   { to: '/style', label: 'Üret' },
-  { to: '/shadow-check', label: 'Saglik' },
+  { to: '/shadow-check', label: 'Shadow Ban' },
   { to: '/settings', label: 'Ayarlar' },
 ]
 
