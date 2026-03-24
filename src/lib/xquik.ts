@@ -310,6 +310,7 @@ export interface GeneratedTweet {
   score: { passed: boolean; count: number; total: number; checklist?: { factor: string; passed: boolean }[] } | null
   attempts: number
   styleOverrides?: string[]
+  styleMatch?: number | null
 }
 
 export interface GenerateResult {
@@ -335,6 +336,8 @@ export async function generateTweet(opts: {
   quoteTweetAuthor?: string
   lengthHint?: string
   personalityDNA?: PersonalityDNA
+  styleSummary?: string
+  fingerprint?: import('./styleFingerprint').StyleFingerprint
 }): Promise<GenerateResult> {
   const res = await fetch('/api/generate-tweet', {
     method: 'POST',
@@ -352,6 +355,8 @@ export async function generateTweet(opts: {
       quoteTweetAuthor: opts.quoteTweetAuthor,
       lengthHint: opts.lengthHint,
       personalityDNA: opts.personalityDNA,
+      styleSummary: opts.styleSummary,
+      fingerprint: opts.fingerprint,
     }),
   })
 
@@ -470,6 +475,8 @@ export interface PersonalityDNA {
     whenAngry: string
     whenBored: string
   }
+  version?: number
+  analyzedTweetCount?: number
 }
 
 /** Extract personality DNA from tweets via Gemini */
@@ -483,6 +490,22 @@ export async function analyzePersonality(tweets: string[]): Promise<{ dna: Perso
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     throw new Error(err.error || 'DNA analizi başarısız')
+  }
+
+  return res.json()
+}
+
+/** Generate a comprehensive style summary from tweets via Gemini */
+export async function generateStyleSummary(tweets: string[], username: string, language?: string): Promise<{ summary: string; geminiUsage: { promptTokens: number; completionTokens: number; totalTokens: number; calls: number } }> {
+  const res = await fetch('/api/generate-style-summary', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tweets, username, language }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || 'Stil özeti oluşturulamadı')
   }
 
   return res.json()

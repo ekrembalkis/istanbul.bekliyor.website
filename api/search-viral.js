@@ -44,7 +44,13 @@ export default async function handler(req, res) {
   if (!XQUIK_KEY) return res.status(500).json({ error: 'XQUIK_API_KEY not configured' })
 
   const { category = 'siyaset', limit = '8' } = req.query || {}
-  const today = new Date().toISOString().slice(0, 10)
+  // Dynamic time window: scale with hour of day (Turkish time UTC+3)
+  // Early morning → wider window (fewer tweets), peak hours → narrower
+  const trHour = (new Date().getUTCHours() + 3) % 24
+  const hoursBack = trHour < 8 ? 48 : trHour < 12 ? 24 : trHour < 20 ? 12 : 18
+  const sinceDate = new Date(Date.now() - hoursBack * 3600000).toISOString().slice(0, 10)
+  const minFavesPool = trHour < 8 ? 300 : 500
+  const minFavesCat = trHour < 8 ? 100 : 200
   const maxResults = Math.min(parseInt(limit) || 8, 20)
   const isTumu = category === 'tumu'
 
@@ -52,7 +58,7 @@ export default async function handler(req, res) {
 
   try {
     // ── Layer 1: Broad viral pool (all viral Turkish tweets today) ──
-    const poolQuery = `lang:tr since:${today} min_faves:500 -filter:replies -filter:retweets`
+    const poolQuery = `lang:tr since:${sinceDate} min_faves:${minFavesPool} -filter:replies -filter:retweets`
     const poolRes = await fetch(
       `https://xquik.com/api/v1/x/tweets/search?q=${encodeURIComponent(poolQuery)}&limit=30&queryType=Top`,
       { headers }
@@ -66,7 +72,7 @@ export default async function handler(req, res) {
     // ── Layer 2: Category-specific search (if not "tumu") ──
     let catTweets = []
     if (!isTumu && CATEGORY_KEYWORDS[category]) {
-      const catQuery = `${CATEGORY_KEYWORDS[category]} lang:tr since:${today} min_faves:200 -filter:replies -filter:retweets`
+      const catQuery = `${CATEGORY_KEYWORDS[category]} lang:tr since:${sinceDate} min_faves:${minFavesCat} -filter:replies -filter:retweets`
       const catRes = await fetch(
         `https://xquik.com/api/v1/x/tweets/search?q=${encodeURIComponent(catQuery)}&limit=20&queryType=Top`,
         { headers }

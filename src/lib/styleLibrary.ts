@@ -2,6 +2,7 @@
 
 import { supabase } from './supabase'
 import type { PersonalityDNA } from './xquik'
+import type { StyleFingerprint } from './styleFingerprint'
 
 export interface StyleLibraryEntry {
   username: string
@@ -12,6 +13,10 @@ export interface StyleLibraryEntry {
   generatedCount: number
   topics: string[]        // frequently used topics
   personalityDNA?: PersonalityDNA
+  styleSummary?: string
+  fingerprint?: StyleFingerprint
+  tweetsSinceSummary?: number
+  tweetsSinceDNA?: number
 }
 
 const LIBRARY_KEY = 'ib_style_library'
@@ -130,6 +135,10 @@ async function syncToSupabase(entry: StyleLibraryEntry) {
       generated_count: entry.generatedCount,
       topics: entry.topics,
       personality_dna: entry.personalityDNA || null,
+      style_summary: entry.styleSummary || null,
+      fingerprint: entry.fingerprint || null,
+      tweets_since_summary: entry.tweetsSinceSummary ?? 0,
+      tweets_since_dna: entry.tweetsSinceDNA ?? 0,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'username' })
   } catch { /* supabase optional */ }
@@ -163,6 +172,10 @@ export async function syncFromSupabase() {
             generatedCount: row.generated_count ?? 0,
             topics: row.topics || [],
             personalityDNA: row.personality_dna || undefined,
+            styleSummary: row.style_summary || undefined,
+            fingerprint: row.fingerprint || undefined,
+            tweetsSinceSummary: row.tweets_since_summary ?? 0,
+            tweetsSinceDNA: row.tweets_since_dna ?? 0,
           }
           if (idx >= 0) local[idx] = entry
           else local.push(entry)

@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   const { tweets = [] } = req.body
   if (tweets.length < 5) return res.status(400).json({ error: 'Need at least 5 tweets' })
 
-  const numberedTweets = tweets.slice(0, 30).map((t, i) => `${i + 1}. ${t.replace(/https?:\/\/\S+/g, '').trim()}`).join('\n')
+  const numberedTweets = tweets.slice(0, 100).map((t, i) => `${i + 1}. ${t.replace(/https?:\/\/\S+/g, '').trim()}`).join('\n')
 
   try {
     const prompt = `These ${tweets.length} tweets belong to the same person. Extract their personality DNA and topic-based behavior profiles.
@@ -34,7 +34,7 @@ Fill in the JSON structure below completely. IMPORTANT: Write ALL values in the 
     "toneSpectrum": "main tone of voice",
     "openingStyle": "how they start tweets",
     "closingStyle": "how they end tweets",
-    "signaturePhrases": ["at least 5 signature words/phrases in original language"],
+    "signaturePhrases": ["at least 8 signature words/phrases in original language"],
     "humorStyle": "humor style"
   },
   "reactions": {
@@ -43,8 +43,8 @@ Fill in the JSON structure below completely. IMPORTANT: Write ALL values in the 
     "toControversy": "how they react to controversy"
   },
   "boundaries": {
-    "neverDoes": ["things they never do, at least 3"],
-    "alwaysDoes": ["things they always do, at least 3"]
+    "neverDoes": ["things they never do, at least 5"],
+    "alwaysDoes": ["things they always do, at least 5"]
   },
   "personalityTraits": {
     "formality": "0-100",
@@ -61,6 +61,7 @@ Fill in the JSON structure below completely. IMPORTANT: Write ALL values in the 
       "typicalReaction": "typical reaction to news about this topic"
     }
   ],
+  "NOTE_topicProfiles": "MUST include at least 5 different topic profiles covering the person's main areas",
   "slangPatterns": ["slang/informal expressions this person uses, in original language. e.g. Turkish: amk, aq, valla. English: lol, bruh, ngl. List actual patterns from tweets."],
   "cognitiveFilters": [
     "through what lens does this person see events? e.g. 'connects everything to football', 'reduces serious topics to personal experience'. At least 2 filters."
@@ -72,7 +73,7 @@ Fill in the JSON structure below completely. IMPORTANT: Write ALL values in the 
     "how does this person use irony? e.g. 'understatement', 'reframing (presents good news as bad)', 'absurd context shifting'. Extract from tweets, at least 2."
   ],
   "ironyExamples": [
-    "pick 3 REAL irony/humor examples from the tweets and write them as-is. These will be few-shot examples for the model."
+    "pick at least 5 REAL irony/humor examples from the tweets and write them as-is. These will be few-shot examples for the model."
   ],
   "contextualBehavior": {
     "whenHappy": "what they do when happy",
@@ -84,13 +85,13 @@ Fill in the JSON structure below completely. IMPORTANT: Write ALL values in the 
 Return ONLY JSON, no explanation.`
 
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1500 },
+          generationConfig: { temperature: 0.3, maxOutputTokens: 3000 },
         }),
       }
     )
@@ -114,6 +115,10 @@ Return ONLY JSON, no explanation.`
     if (!dna || !dna.identity) {
       return res.status(500).json({ error: 'DNA extraction failed', raw: rawText.substring(0, 200) })
     }
+
+    // Add metadata
+    dna.version = 2
+    dna.analyzedTweetCount = tweets.slice(0, 100).length
 
     const geminiUsage = {
       promptTokens: geminiData.usageMetadata?.promptTokenCount || 0,

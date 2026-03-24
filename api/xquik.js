@@ -42,6 +42,15 @@ export default async function handler(req, res) {
       return res.status(204).end()
     }
 
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      const text = await response.text()
+      return res.status(response.status || 502).json({
+        error: `Xquik returned non-JSON (${response.status})`,
+        detail: text.substring(0, 200),
+      })
+    }
+
     const data = await response.json()
 
     if (!response.ok) {

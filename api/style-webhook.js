@@ -50,6 +50,23 @@ export default async function handler(req, res) {
       body: JSON.stringify({ label: username, tweets: updatedTweets }),
     })
 
+    // Increment style freshness counters in Supabase (fire-and-forget)
+    const SUPABASE_URL = process.env.VITE_SUPABASE_URL?.trim()
+    const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY?.trim()
+    if (SUPABASE_URL && SUPABASE_KEY) {
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_style_counters`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+          },
+          body: JSON.stringify({ target_username: username }),
+        })
+      } catch { /* counter update optional */ }
+    }
+
     return res.status(200).json({ ok: true, added: tweetText.substring(0, 50) })
   } catch (error) {
     console.error('Style webhook error:', error)

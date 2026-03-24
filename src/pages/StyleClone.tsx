@@ -6,7 +6,7 @@ import {
   getSavedDrafts, saveDraft, deleteDraft,
   startDeepAnalysis, getExtractionJob, getAllExtractionResults, saveCuratedStyle,
   createMonitor, listMonitors, deleteMonitor, createWebhook, listWebhooks,
-  generateTweet, getRadarTopics, lookupTweet, analyzePersonality,
+  generateTweet, getRadarTopics, lookupTweet, analyzePersonality, generateStyleSummary,
   getConnectedAccounts, publishTweet,
 } from '../lib/xquik'
 import type { StyleProfile, XUser, Draft, ScoreResult, ComposeRefineResult, Monitor, GeneratedTweet, PersonalityDNA, XAccount } from '../lib/xquik'
@@ -139,7 +139,8 @@ export default function StyleClone() {
       setComposeTopic(top.title)
       setTopicContext(`Trending: ${top.title} (kaynak: ${top.source}, skor: ${top.score})`)
 
-      const styleDNA = library.find(e => e.username === composeStyle)?.personalityDNA
+      const styleEntry = library.find(e => e.username === composeStyle)
+      const styleDNA = styleEntry?.personalityDNA
       const contextParts: string[] = []
       if (composeStyle === 'istbekliyor') {
         const day = getDayCount()
@@ -160,6 +161,8 @@ export default function StyleClone() {
         mode: 'tweet',
         lengthHint: lengthHint || undefined,
         personalityDNA: styleDNA,
+        styleSummary: styleEntry?.styleSummary,
+        fingerprint: styleEntry?.fingerprint,
       })
       setGeneratedTweets(result.tweets)
       if (result.geminiUsage) trackGeminiUsage(result.geminiUsage)
@@ -278,6 +281,28 @@ export default function StyleClone() {
           const entry = lib.find(e => e.username === clean)
           if (entry) {
             entry.personalityDNA = dna
+            entry.tweetsSinceDNA = 0
+
+            // 7b. Compute style fingerprint (zero cost)
+            setDeepProgress('Stil parmak izi hesaplanıyor...')
+            try {
+              const { computeFingerprint } = await import('../lib/styleFingerprint')
+              entry.fingerprint = computeFingerprint(tweetTexts)
+            } catch (fpErr: any) {
+              console.warn('Fingerprint computation failed:', fpErr.message)
+            }
+
+            // 7c. Generate style summary
+            setDeepProgress('Stil özeti oluşturuluyor...')
+            try {
+              const { summary, geminiUsage: sumUsage } = await generateStyleSummary(tweetTexts, clean, dna?.language)
+              if (sumUsage) trackGeminiUsage(sumUsage)
+              entry.styleSummary = summary
+              entry.tweetsSinceSummary = 0
+            } catch (sumErr: any) {
+              console.warn('Style summary failed:', sumErr.message)
+            }
+
             saveEntry(entry)
             setLibrary(getLibrary())
           }
@@ -353,8 +378,9 @@ export default function StyleClone() {
     setGeneratedTweets([])
 
     try {
-      // Get personality DNA from library if available
-      const styleDNA = library.find(e => e.username === composeStyle)?.personalityDNA
+      // Get personality DNA + style data from library if available
+      const styleEntry = library.find(e => e.username === composeStyle)
+      const styleDNA = styleEntry?.personalityDNA
 
       // Build merged context: campaign day (only for campaign account) + topic suggestions + user hint
       const contextParts: string[] = []
@@ -380,6 +406,8 @@ export default function StyleClone() {
         quoteTweetAuthor: quoteTweetAuthor || undefined,
         lengthHint: lengthHint || undefined,
         personalityDNA: styleDNA,
+        styleSummary: styleEntry?.styleSummary,
+        fingerprint: styleEntry?.fingerprint,
       })
       setGeneratedTweets(result.tweets)
       if (result.geminiUsage) trackGeminiUsage(result.geminiUsage)
@@ -1339,6 +1367,11 @@ export default function StyleClone() {
                                 </span>
                               )}
                               <span className="text-[10px] text-slate-400">{gt.tweet.length} chr</span>
+                              {gt.styleMatch != null && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${gt.styleMatch >= 80 ? 'bg-emerald-500/10 text-emerald-500' : gt.styleMatch >= 60 ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'}`}>
+                                  stil {gt.styleMatch}%
+                                </span>
+                              )}
                               {isThread && i === 0 && (
                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-brand-red/10 text-brand-red font-medium">
                                   hook

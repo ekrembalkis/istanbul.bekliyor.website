@@ -26,6 +26,103 @@ const LOWERCASE_REGEX = {
   _default: /^[a-z]/,
 }
 
+// ── Category regex for topic-aware tweet selection (from search-viral.js) ──
+const CATEGORY_REGEX_LOCAL = {
+  spor: /galatasaray|fenerbah|beşiktaş|trabzon|süper lig|osimhen|maç\b|gol\b|futbol|hakem|şampiyon|milli tak|basketbol|voleybol|derbi|teknik direktör/i,
+  ekonomi: /dolar|euro|borsa|enflasyon|faiz|altın|petrol|ekonomi|zam\b|maaş|kira\b|bist|merkez bank|emekli|asgari|motorin|benzin|mazot|ihracat|vergi/i,
+  siyaset: /bakan|meclis|chp\b|akp\b|mhp\b|hdp\b|iyi parti|seçim|cumhurbaş|milletvekil|mahkeme|tutuklam|adalet|hükümet|muhalefet|erdoğan|imamoğlu|belediye|anayasa|tbmm/i,
+  teknoloji: /yapay zeka|teknoloji|yazılım|uygulama|iha\b|drone|robot|ai\b|siber|dijital|startup|bilişim/i,
+  kultur: /film\b|dizi\b|müzik|kitap|sinema|sanat|konser|tiyatro|roman\b|albüm|netflix|spotify|ödül|festival/i,
+  bilim: /bilim|uzay|araştırma|nasa|keşif|fizik|kimya|biyoloji|üniversite|tübitak|genom|iklim/i,
+}
+
+// ── Topic-aware tweet selection (Y2) ──
+function selectStyleTweets(allTweets, topic, count = 15) {
+  if (!topic || allTweets.length <= count) return allTweets.slice(0, count)
+
+  // Expand topic keywords with category terms
+  const topicWords = topic.toLowerCase().split(/\s+/).filter(w => w.length > 2)
+  const expandedWords = [...topicWords]
+  for (const [, regex] of Object.entries(CATEGORY_REGEX_LOCAL)) {
+    if (topicWords.some(w => regex.test(w))) {
+      const matches = regex.source.match(/[a-züöçşğıİ]{3,}/gi) || []
+      expandedWords.push(...matches.slice(0, 15))
+      break
+    }
+  }
+  const wordSet = new Set(expandedWords.map(w => w.toLowerCase()))
+
+  // Score each tweet by keyword overlap
+  const scored = allTweets.map((text, idx) => {
+    const lower = text.toLowerCase()
+    const overlap = [...wordSet].filter(w => lower.includes(w)).length
+    return { text, idx, overlap }
+  })
+
+  // Stratified selection: 5 topic + 4 characteristic + 3 diverse + 3 random
+  const topicRelevant = scored
+    .filter(s => s.overlap > 0)
+    .sort((a, b) => b.overlap - a.overlap)
+    .slice(0, 5)
+
+  const usedIdx = new Set(topicRelevant.map(s => s.idx))
+
+  const remaining = scored.filter(s => !usedIdx.has(s.idx))
+  const characteristic = remaining.slice(0, 4)
+  characteristic.forEach(s => usedIdx.add(s.idx))
+
+  const notUsed = scored.filter(s => !usedIdx.has(s.idx))
+  const step = Math.max(1, Math.floor(notUsed.length / 4))
+  const diverse = []
+  for (let i = 0; i < notUsed.length && diverse.length < 3; i += step) {
+    diverse.push(notUsed[i])
+    usedIdx.add(notUsed[i].idx)
+  }
+
+  const finalRemaining = scored.filter(s => !usedIdx.has(s.idx))
+  const random = []
+  for (let i = 0; i < 3 && finalRemaining.length > 0; i++) {
+    const ri = Math.floor(Math.random() * finalRemaining.length)
+    random.push(finalRemaining.splice(ri, 1)[0])
+  }
+
+  const selected = [...topicRelevant, ...characteristic, ...diverse, ...random]
+  return selected.slice(0, count).map(s => s.text)
+}
+
+// ── Server-side fingerprint match (lightweight version for validation gate) ──
+function fingerprintMatchServer(tweet, fp) {
+  if (!fp || !fp.avgCharCount) return 100 // skip if no fingerprint
+
+  let score = 0, checks = 0
+
+  // Char length within 1.5 stddev
+  checks++
+  if (Math.abs(tweet.length - fp.avgCharCount) <= (fp.charStdDev || 50) * 1.5) score++
+
+  // Lowercase start
+  checks++
+  const startsLower = /^[a-zçğıöşü]/.test(tweet)
+  if ((startsLower && fp.lowercaseStartRatio > 0.5) || (!startsLower && fp.lowercaseStartRatio <= 0.5)) score++
+
+  // Question mark
+  checks++
+  const hasQ = tweet.includes('?')
+  if ((hasQ && fp.questionRatio > 0.15) || (!hasQ && fp.questionRatio <= 0.15)) score++
+
+  // Emoji
+  checks++
+  const hasEmoji = /[\u{1F300}-\u{1FAFF}]/u.test(tweet)
+  if ((hasEmoji && fp.emojiRatio > 0.1) || (!hasEmoji && fp.emojiRatio <= 0.1)) score++
+
+  // Slang
+  checks++
+  const slangCount = (tweet.match(/amk|aq\b|falan|valla|ya\b|lan\b/gi) || []).length
+  if ((slangCount > 0 && fp.slangDensity > 0.05) || (slangCount === 0 && fp.slangDensity <= 0.05)) score++
+
+  return Math.round((score / checks) * 100)
+}
+
 // ── Language-adaptive prompt templates ──
 const T = {
   tr: {
@@ -161,6 +258,8 @@ export default async function handler(req, res) {
     quoteTweetText = '', quoteTweetAuthor = '',
     lengthHint = '', // kisa | normal | uzun | (empty = style-based)
     personalityDNA = null, // optional PersonalityDNA object from frontend
+    styleSummary = '', // optional style summary text from frontend
+    fingerprint = null, // optional StyleFingerprint object from frontend
   } = req.body
 
   if (!styleUsername || (!topic && !quoteTweetText)) {
@@ -176,10 +275,10 @@ export default async function handler(req, res) {
     let styleTweets = []
     if (styleRes.ok) {
       const styleData = await styleRes.json()
-      styleTweets = (styleData.tweets || [])
+      const allFiltered = (styleData.tweets || [])
         .filter(t => !t.text.startsWith('@') && t.text.length > 20)
-        .slice(0, 15)
         .map(t => t.text)
+      styleTweets = selectStyleTweets(allFiltered, topic || quoteTweetText, 15)
     }
 
     if (styleTweets.length < 3) {
@@ -298,13 +397,68 @@ ${t.dnaTraits}: Formality ${traits.formality || 0}/100, Humor ${traits.humor || 
       modeInstruction = t.tweetInstruction(topic, topicContext, tone, goal, count)
     }
 
-    const prompt = `${systemLine}. MOD: ${modeLabel}. ${lang === 'tr' ? 'Verilen kisinin tarzinda tweet yazacaksin.' : `Write tweets in this person's exact style. ALL output MUST be in ${lang.toUpperCase()}.`}
+    // Gemini URL (reused across calls)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_KEY}`
 
+    // Track Gemini token usage (moved up for CoT access)
+    const geminiUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0, calls: 0 }
+    function trackUsage(data) {
+      if (data?.usageMetadata) {
+        geminiUsage.calls++
+        geminiUsage.promptTokens += data.usageMetadata.promptTokenCount || 0
+        geminiUsage.completionTokens += data.usageMetadata.candidatesTokenCount || 0
+        geminiUsage.totalTokens += data.usageMetadata.totalTokenCount || 0
+      }
+    }
+
+    // Vocabulary Lock (H) — extract signature words from style tweets
+    const vocabWords = styleTweets.join(' ').toLowerCase().split(/\s+/).filter(w => w.length > 2)
+    const vocabFreq = {}
+    vocabWords.forEach(w => { vocabFreq[w] = (vocabFreq[w] || 0) + 1 })
+    const vocabSignature = Object.entries(vocabFreq).sort((a, b) => b[1] - a[1]).slice(0, 40).map(e => e[0]).join(', ')
+    const vocabBlock = lang === 'tr'
+      ? `\nKELIME HAVUZU (bu kisinin en sik kullandigi kelimeler — bunlardan MUTLAKA birkacini kullan):\n${vocabSignature}\n`
+      : `\nVOCABULARY (this person's most used words — you MUST use several of these):\n${vocabSignature}\n`
+
+    // Chain-of-Thought (B) — think before generating (clone mode only)
+    let cotBlock = ''
+    if (cloneMode && mode !== 'thread') {
+      const cotPrompt = lang === 'tr'
+        ? `Bu tweetleri analiz et:\n${numberedExamples}\n\nBu kisi "${topic || quoteTweetText}" hakkinda tweet yazacak olsa:\n1. Hangi aciyi secerdi?\n2. Hangi kelimeleri/argoyu kullanirdi?\n3. Nasil baslar nasil bitirir?\n4. Ne YAPMAZ?\nKisa cevapla (4 satir max).`
+        : `Analyze these tweets:\n${numberedExamples}\n\nIf this person wrote about "${topic || quoteTweetText}":\n1. What angle?\n2. What words/slang?\n3. How do they start/end?\n4. What would they NEVER do?\nBrief answer (4 lines max).`
+
+      try {
+        const cotRes = await fetch(geminiUrl, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: cotPrompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 300 } })
+        })
+        if (cotRes.ok) {
+          const cotData = await cotRes.json()
+          trackUsage(cotData)
+          const cotText = cotData.candidates?.[0]?.content?.parts?.[0]?.text || ''
+          if (cotText) {
+            cotBlock = lang === 'tr'
+              ? `\n--- BU KISI BOYLE DUSUNUR ---\n${cotText.substring(0, 500)}\n---\n`
+              : `\n--- HOW THIS PERSON THINKS ---\n${cotText.substring(0, 500)}\n---\n`
+          }
+        }
+      } catch { /* CoT optional */ }
+    }
+
+    // Style summary block (Y1)
+    const summaryBlock = styleSummary
+      ? `\n--- ${lang === 'tr' ? 'STIL REHBERI (bu kisinin yazim kilavuzu — bunu esas al)' : 'STYLE GUIDE (this person\'s writing manual — follow this closely)'} ---\n${styleSummary}\n---\n\n`
+      : ''
+
+    const prompt = `${systemLine}. MOD: ${modeLabel}. ${lang === 'tr' ? 'Verilen kisinin tarzinda tweet yazacaksin.' : `Write tweets in this person's exact style. ALL output MUST be in ${lang.toUpperCase()}.`}
+${summaryBlock}
 ${t.styleHeader} (@${styleUsername}):
 ${numberedExamples}
 ${dnaBlock}
+${cotBlock}
 ${t.styleRulesHeader}:
 - ${styleRules}
+${vocabBlock}
 ${lengthBlock}
 
 ${t.algoHeader}:
@@ -314,8 +468,7 @@ ${mode !== 'reply' ? `- ${t.substance}` : ''}
 ${modeInstruction}`
 
     // 9. Generate with Gemini
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+    const geminiRes = await fetch(geminiUrl,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -334,13 +487,8 @@ ${modeInstruction}`
     const geminiData = await geminiRes.json()
     const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
 
-    // Track Gemini token usage
-    const geminiUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0, calls: 1 }
-    if (geminiData.usageMetadata) {
-      geminiUsage.promptTokens = geminiData.usageMetadata.promptTokenCount || 0
-      geminiUsage.completionTokens = geminiData.usageMetadata.candidatesTokenCount || 0
-      geminiUsage.totalTokens = geminiData.usageMetadata.totalTokenCount || 0
-    }
+    // Track main generation usage
+    trackUsage(geminiData)
 
     // Parse tweets from numbered list (language-adaptive garbage filter)
     const garbageFilter = t.garbageFilter
@@ -367,7 +515,7 @@ ${modeInstruction}`
       if (mode === 'thread' && currentDraft.length < 80) {
         const extendPrompt = t.extendPrompt(currentDraft, cloneMode && !styleUsesQuestion)
         const extRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_KEY}`,
           { method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: extendPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 200 } }) }
         )
@@ -377,12 +525,7 @@ ${modeInstruction}`
           if (extended && extended.length >= 80) {
             currentDraft = extended.replace(/^\d+[\.\)\/]\s*/, '').replace(/^["']|["']$/g, '')
           }
-          if (extData.usageMetadata) {
-            geminiUsage.calls++
-            geminiUsage.promptTokens += extData.usageMetadata.promptTokenCount || 0
-            geminiUsage.completionTokens += extData.usageMetadata.candidatesTokenCount || 0
-            geminiUsage.totalTokens += extData.usageMetadata.totalTokenCount || 0
-          }
+          trackUsage(extData)
         }
       }
 
@@ -417,7 +560,7 @@ ${modeInstruction}`
           const targetRange = mode === 'thread' ? '80-180' : '60-120'
           const fixPrompt = t.fixShortPrompt(currentDraft, targetRange, cloneMode && !styleUsesQuestion)
           const fixRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_KEY}`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -433,14 +576,106 @@ ${modeInstruction}`
             if (fixed && fixed.length > 40) {
               currentDraft = fixed.replace(/^\d+[\.\)]\s*/, '').replace(/^["']|["']$/g, '')
             }
-            if (fixData.usageMetadata) {
-              geminiUsage.calls++
-              geminiUsage.promptTokens += fixData.usageMetadata.promptTokenCount || 0
-              geminiUsage.completionTokens += fixData.usageMetadata.candidatesTokenCount || 0
-              geminiUsage.totalTokens += fixData.usageMetadata.totalTokenCount || 0
-            }
+            trackUsage(fixData)
           }
         }
+      }
+
+      // Fingerprint validation gate (Y3+Y8)
+      let styleMatch = null
+      if (fingerprint) {
+        styleMatch = fingerprintMatchServer(currentDraft, fingerprint)
+
+        // If poor match and we haven't exhausted retries, try one targeted fix
+        if (styleMatch < 60 && attempts <= 3) {
+          const fixHints = []
+          if (fingerprint.lowercaseStartRatio > 0.5 && !/^[a-zçğıöşü]/.test(currentDraft)) fixHints.push('MUTLAKA kucuk harfle basla')
+          if (fingerprint.emojiRatio < 0.05 && /[\u{1F300}-\u{1FAFF}]/u.test(currentDraft)) fixHints.push('Tum emojileri kaldir')
+          if (fingerprint.slangDensity > 0.05 && !(currentDraft.match(/amk|aq|falan|valla|ya\b|lan\b/gi) || []).length) fixHints.push('Argo ekle (amk, aq, falan gibi)')
+          if (Math.abs(currentDraft.length - fingerprint.avgCharCount) > fingerprint.charStdDev * 2) {
+            fixHints.push(`Tweet uzunlugu ${fingerprint.avgCharCount} karakter civarinda olmali (simdi: ${currentDraft.length})`)
+          }
+
+          if (fixHints.length > 0) {
+            const styleFixPrompt = lang === 'tr'
+              ? `Bu tweeti ayni stilde yeniden yaz ama su kurallara uy:\n${fixHints.map(h => '- ' + h).join('\n')}\n\nOrijinal: "${currentDraft}"\n\nSadece yeni tweet metnini yaz.`
+              : `Rewrite this tweet in the same style but fix these issues:\n${fixHints.map(h => '- ' + h).join('\n')}\n\nOriginal: "${currentDraft}"\n\nWrite only the new tweet text.`
+
+            try {
+              const fixRes = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_KEY}`,
+                { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ contents: [{ parts: [{ text: styleFixPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 200 } }) }
+              )
+              if (fixRes.ok) {
+                const fixData = await fixRes.json()
+                const fixed = fixData.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+                if (fixed && fixed.length > 30) {
+                  const cleanFixed = fixed.replace(/^\d+[\.\)\/]\s*/, '').replace(/^["']|["']$/g, '')
+                  const newMatch = fingerprintMatchServer(cleanFixed, fingerprint)
+                  if (newMatch > styleMatch) {
+                    currentDraft = cleanFixed
+                    styleMatch = newMatch
+                  }
+                }
+                if (fixData.usageMetadata) {
+                  geminiUsage.calls++
+                  geminiUsage.promptTokens += fixData.usageMetadata.promptTokenCount || 0
+                  geminiUsage.completionTokens += fixData.usageMetadata.candidatesTokenCount || 0
+                  geminiUsage.totalTokens += fixData.usageMetadata.totalTokenCount || 0
+                }
+              }
+            } catch { /* fingerprint fix optional */ }
+          }
+        }
+      }
+
+      // Iterative refinement (F) — criticize + fix (clone mode only, max 1 round)
+      if (cloneMode && mode !== 'thread' && styleMatch != null && styleMatch < 70) {
+        try {
+          // Step 1: Criticize
+          const critiquePrompt = lang === 'tr'
+            ? `Gercek tweetler:\n${styleTweets.slice(0, 5).map((tw2,i) => `${i+1}. ${tw2}`).join('\n')}\n\nUretilen tweet: "${currentDraft}"\n\nBu tweet bu kisiye ne kadar benziyor? Neyi dogru yapmis, neyi YANLIS? 2 satir max.`
+            : `Real tweets:\n${styleTweets.slice(0, 5).map((tw2,i) => `${i+1}. ${tw2}`).join('\n')}\n\nGenerated: "${currentDraft}"\n\nHow well does this match? What's right, what's WRONG? 2 lines max.`
+
+          const critRes = await fetch(geminiUrl, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: critiquePrompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 150 } })
+          })
+
+          if (critRes.ok) {
+            const critData = await critRes.json()
+            trackUsage(critData)
+            const critique = critData.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+            if (critique) {
+              // Step 2: Fix based on critique
+              const refinePrompt = lang === 'tr'
+                ? `ORIJINAL: "${currentDraft}"\n\nELESTIRI: ${critique}\n\nBu elestiriyi dikkate alarak tweeti DUZELT. Kisinin gercek tarzina daha cok benzesin.\nGercek ornekler: ${styleTweets.slice(0, 3).join(' | ')}\n\nSadece duzeltilmis tweet metnini yaz.`
+                : `ORIGINAL: "${currentDraft}"\n\nCRITIQUE: ${critique}\n\nFix based on critique. Match the real style better.\nReal examples: ${styleTweets.slice(0, 3).join(' | ')}\n\nWrite only the fixed tweet.`
+
+              const refineRes = await fetch(geminiUrl, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: refinePrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 200 } })
+              })
+
+              if (refineRes.ok) {
+                const refineData = await refineRes.json()
+                trackUsage(refineData)
+                const refined = refineData.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+                if (refined && refined.length > 30) {
+                  const cleanRefined = refined.replace(/^\d+[\.\)\/]\s*/, '').replace(/^["']|["']$/g, '')
+                  const newMatch = fingerprint ? fingerprintMatchServer(cleanRefined, fingerprint) : 100
+                  if (newMatch >= (styleMatch || 0)) {
+                    currentDraft = cleanRefined
+                    styleMatch = newMatch
+                    tweetOverrides.push('iterative-refined')
+                  }
+                }
+              }
+            }
+          }
+        } catch { /* iterative refinement optional */ }
       }
 
       results.push({
@@ -448,6 +683,7 @@ ${modeInstruction}`
         score: scoreData ? { passed: scoreData.passed, count: scoreData.passedCount, total: scoreData.totalChecks, checklist: scoreData.checklist } : null,
         attempts,
         styleOverrides: tweetOverrides,
+        styleMatch,
       })
     }
 
