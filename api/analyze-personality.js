@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
 
-  const GEMINI_KEY = process.env.GEMINI_API_KEY
+  const GEMINI_KEY = (process.env.GEMINI_API_KEY || '').trim()
   if (!GEMINI_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' })
 
   const { tweets = [] } = req.body

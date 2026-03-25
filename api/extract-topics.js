@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
 
-  const GEMINI_KEY = process.env.GEMINI_API_KEY
+  const GEMINI_KEY = (process.env.GEMINI_API_KEY || '').trim()
   const XQUIK_KEY = process.env.XQUIK_API_KEY
   if (!GEMINI_KEY || !XQUIK_KEY) {
     return res.status(500).json({ error: 'API keys not configured' })
