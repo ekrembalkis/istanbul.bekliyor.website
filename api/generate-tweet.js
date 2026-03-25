@@ -348,18 +348,6 @@ export default async function handler(req, res) {
       lengthBlock = t.lengthAvg(avgLen)
     }
 
-    // 6. Build style rules
-    const slangDisplay = dnaSlang || (lang === 'tr' ? 'amk, aq, falan, valla, ya' : 'lol, bruh, ngl, tbh')
-    const styleRules = [
-      startsLower > styleTweets.length / 2 ? t.lowercaseRule : null,
-      usesSlang ? t.slangRule(slangDisplay) : t.noSlang,
-      hasEmoji ? null : t.noEmoji,
-      t.noHashtag,
-      t.noDash,
-      ctaRule,
-      t.noLink,
-    ].filter(Boolean).join('\n- ')
-
     // 7. Build personality DNA block (if available)
     let dnaBlock = ''
     if (personalityDNA) {
