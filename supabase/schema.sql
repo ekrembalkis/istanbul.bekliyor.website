@@ -38,6 +38,45 @@ INSERT INTO settings (key, value) VALUES
   ('primary_hashtag', '"#İstanbulBekliyor"'),
   ('brand_colors', '{"red": "#E30A17", "white": "#FFFFFF", "dark": "#0C0C12", "gold": "#D4A843"}');
 
+-- Style library: stores style cloning profiles with DNA, fingerprint, and quality metrics
+CREATE TABLE style_library (
+  username TEXT PRIMARY KEY,
+  category TEXT DEFAULT 'diger',
+  notes TEXT DEFAULT '',
+  is_pinned BOOLEAN DEFAULT false,
+  last_used_at TIMESTAMPTZ DEFAULT NOW(),
+  generated_count INTEGER DEFAULT 0,
+  topics TEXT[] DEFAULT '{}',
+  personality_dna JSONB,
+  style_summary TEXT,
+  fingerprint JSONB,
+  tweets_since_summary INTEGER DEFAULT 0,
+  tweets_since_dna INTEGER DEFAULT 0,
+  extracted_tweet_count INTEGER DEFAULT 0,
+  data_quality TEXT DEFAULT 'low' CHECK (data_quality IN ('high', 'medium', 'low')),
+  topic_coverage JSONB,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE style_library ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all on style_library" ON style_library FOR ALL USING (true);
+
+CREATE TRIGGER style_library_updated_at
+  BEFORE UPDATE ON style_library
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Webhook counter increment function (called by style-webhook.js)
+CREATE OR REPLACE FUNCTION increment_style_counters(target_username TEXT)
+RETURNS void AS $$
+BEGIN
+  UPDATE style_library
+  SET tweets_since_summary = COALESCE(tweets_since_summary, 0) + 1,
+      tweets_since_dna = COALESCE(tweets_since_dna, 0) + 1,
+      updated_at = NOW()
+  WHERE username = target_username;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Image storage bucket (run in Supabase dashboard > Storage)
 -- Create bucket: "tweet-images" (public)
 
