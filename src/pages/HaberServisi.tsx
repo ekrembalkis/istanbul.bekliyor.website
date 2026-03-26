@@ -6,11 +6,13 @@ import {
   startNewsPolling,
   getRelativeTime,
   getNewsForTweet,
+  generateInstagramContent,
   CATEGORIES,
   SOURCES,
   type NewsItem,
   type NewsApiResponse,
   type NewsFilter,
+  type InstagramContent,
 } from '../lib/newsService'
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -77,6 +79,23 @@ export default function HaberServisi() {
     const params = getNewsForTweet(item)
     const qs = new URLSearchParams(params).toString()
     navigate(`/planner?${qs}`)
+  }
+
+  // Instagram content generation
+  const [igModal, setIgModal] = useState<{ item: NewsItem; content: InstagramContent | null; loading: boolean; error: string } | null>(null)
+
+  const handleInstagram = async (item: NewsItem) => {
+    setIgModal({ item, content: null, loading: true, error: '' })
+    try {
+      const content = await generateInstagramContent(item)
+      setIgModal({ item, content, loading: false, error: '' })
+    } catch (err) {
+      setIgModal(prev => prev ? { ...prev, loading: false, error: err instanceof Error ? err.message : 'Bilinmeyen hata' } : null)
+    }
+  }
+
+  const handleCopy = async (text: string) => {
+    await navigator.clipboard.writeText(text)
   }
 
   return (
@@ -196,6 +215,7 @@ export default function HaberServisi() {
                     item={item}
                     isCampaign
                     onUseTweet={handleUseTweet}
+                    onInstagram={handleInstagram}
                   />
                 ))}
               </div>
@@ -224,6 +244,7 @@ export default function HaberServisi() {
                   key={item.id}
                   item={item}
                   onUseTweet={handleUseTweet}
+                  onInstagram={handleInstagram}
                 />
               ))}
             </div>
@@ -253,6 +274,108 @@ export default function HaberServisi() {
           </section>
         </>
       )}
+
+      {/* Instagram Content Modal */}
+      {igModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setIgModal(null)}
+        >
+          <div
+            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-dark-card shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-dark-card rounded-t-2xl">
+              <div className="flex items-center gap-2">
+                <span className="text-fuchsia-500 text-lg">&#9632;</span>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white">Instagram İçeriği</h3>
+              </div>
+              <button
+                onClick={() => setIgModal(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors"
+              >
+                &#10005;
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Source news title */}
+              <div className="text-xs text-slate-400 leading-relaxed">
+                <span className="font-medium text-slate-500 dark:text-slate-300">{igModal.item.sourceLabel}:</span>{' '}
+                {igModal.item.title}
+              </div>
+
+              {/* Loading */}
+              {igModal.loading && (
+                <div className="py-12 text-center space-y-3">
+                  <div className="inline-block w-6 h-6 border-2 border-fuchsia-500/30 border-t-fuchsia-500 rounded-full animate-spin" />
+                  <p className="text-xs text-slate-400">Gemini ile oluşturuluyor...</p>
+                </div>
+              )}
+
+              {/* Error */}
+              {igModal.error && (
+                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
+                  <p className="text-xs text-red-600 dark:text-red-400">{igModal.error}</p>
+                  <button
+                    onClick={() => handleInstagram(igModal.item)}
+                    className="mt-2 text-xs font-medium text-red-600 dark:text-red-400 underline"
+                  >
+                    Tekrar Dene
+                  </button>
+                </div>
+              )}
+
+              {/* Content */}
+              {igModal.content && (
+                <>
+                  {/* Image Text */}
+                  <ContentBlock
+                    label="Görsel Üstü Metin"
+                    sublabel="Post görselinin alt alanına yazılacak"
+                    content={igModal.content.imageText}
+                    onCopy={handleCopy}
+                  />
+
+                  {/* Caption Hook */}
+                  <ContentBlock
+                    label="Caption Hook"
+                    sublabel="Caption'ın en başı — büyük harflerle"
+                    content={igModal.content.captionHook}
+                    onCopy={handleCopy}
+                    mono
+                  />
+
+                  {/* Caption Body */}
+                  <ContentBlock
+                    label="Caption Metni"
+                    sublabel="Giriş → Gelişme → Sonuç"
+                    content={igModal.content.captionBody}
+                    onCopy={handleCopy}
+                  />
+
+                  {/* Copy Full Caption */}
+                  <button
+                    onClick={() => handleCopy(`${igModal.content!.captionHook}\n\n${igModal.content!.captionBody}`)}
+                    className="w-full py-2.5 text-xs font-bold text-white bg-fuchsia-600 hover:bg-fuchsia-700 rounded-lg transition-colors"
+                  >
+                    Tam Caption'u Kopyala (Hook + Body)
+                  </button>
+
+                  {/* Regenerate */}
+                  <button
+                    onClick={() => handleInstagram(igModal.item)}
+                    className="w-full py-2 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] rounded-lg transition-colors"
+                  >
+                    Yeniden Oluştur
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -261,10 +384,12 @@ function NewsCard({
   item,
   isCampaign,
   onUseTweet,
+  onInstagram,
 }: {
   item: NewsItem
   isCampaign?: boolean
   onUseTweet: (item: NewsItem) => void
+  onInstagram: (item: NewsItem) => void
 }) {
   const sourceColor = SOURCE_COLORS[item.source] || 'bg-slate-500/10 text-slate-500'
   const categoryColor = CATEGORY_COLORS[item.category] || 'bg-slate-500/10 text-slate-500'
@@ -338,6 +463,12 @@ function NewsCard({
         >
           Tweet İçin Kullan
         </button>
+        <button
+          onClick={() => onInstagram(item)}
+          className="px-3 py-1.5 text-[11px] font-medium text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-500/[0.06] hover:bg-fuchsia-500/[0.12] rounded-lg transition-colors"
+        >
+          Instagram İçin Kullan
+        </button>
         <a
           href={item.url}
           target="_blank"
@@ -348,5 +479,47 @@ function NewsCard({
         </a>
       </div>
     </article>
+  )
+}
+
+function ContentBlock({
+  label,
+  sublabel,
+  content,
+  onCopy,
+  mono,
+}: {
+  label: string
+  sublabel: string
+  content: string
+  onCopy: (text: string) => void
+  mono?: boolean
+}) {
+  const [copied, setCopied] = useState(false)
+
+  const handleClick = () => {
+    onCopy(content)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
+  return (
+    <div className="rounded-xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-white/[0.03]">
+        <div>
+          <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">{label}</span>
+          <span className="text-[10px] text-slate-400 ml-2">{sublabel}</span>
+        </div>
+        <button
+          onClick={handleClick}
+          className="px-2 py-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors"
+        >
+          {copied ? 'Kopyalandı' : 'Kopyala'}
+        </button>
+      </div>
+      <div className={`px-3 py-3 text-xs leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap ${mono ? 'font-mono text-base font-black tracking-wide text-slate-900 dark:text-white' : ''}`}>
+        {content}
+      </div>
+    </div>
   )
 }

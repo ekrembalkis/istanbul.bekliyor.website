@@ -156,6 +156,33 @@ export function getNewsForTweet(item: NewsItem): { newsTitle: string; newsContex
   }
 }
 
+export interface InstagramContent {
+  imageText: string
+  captionHook: string
+  captionBody: string
+}
+
+export async function generateInstagramContent(item: NewsItem): Promise<InstagramContent> {
+  const response = await fetch('/api/generate-instagram', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: item.title,
+      description: item.description,
+      url: item.url,
+      source: item.sourceLabel,
+      category: item.category,
+    }),
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(err.error || `API error: ${response.status}`)
+  }
+
+  return response.json()
+}
+
 export const CATEGORIES = [
   { key: 'all', label: 'Tümü' },
   { key: 'siyaset', label: 'Siyaset' },
