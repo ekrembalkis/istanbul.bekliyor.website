@@ -99,7 +99,16 @@ Bu haberden Instagram içeriği üret. JSON formatında dön.`
       return res.status(502).json({ error: 'Empty Gemini response' })
     }
 
-    const result = JSON.parse(text)
+    // Gemini sometimes returns unescaped control chars inside JSON string values
+    // Fix: escape raw newlines/tabs that appear inside string literals
+    const sanitized = text.replace(/[\x00-\x1f]/g, (ch) => {
+      if (ch === '\n') return '\\n'
+      if (ch === '\r') return '\\r'
+      if (ch === '\t') return '\\t'
+      return ''
+    })
+
+    const result = JSON.parse(sanitized)
 
     // Validate required fields
     if (!result.imageText || !result.captionHook || !result.captionBody) {
