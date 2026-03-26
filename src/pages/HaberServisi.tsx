@@ -417,37 +417,21 @@ export default function HaberServisi() {
 
                     {igModal.images.length > 0 && !igModal.imageLoading && (
                       <>
-                        <div className="grid grid-cols-3 gap-2">
-                          {igModal.images.map(img => (
-                            <button
-                              key={img.id}
-                              onClick={() => setIgModal(prev => prev ? { ...prev, selectedImage: prev.selectedImage === img.url ? null : img.url } : null)}
-                              className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                                igModal.selectedImage === img.url
-                                  ? 'border-fuchsia-500 ring-2 ring-fuchsia-500/30'
-                                  : 'border-transparent hover:border-slate-300 dark:hover:border-white/20'
-                              }`}
-                            >
-                              <img
-                                src={img.thumbnail}
-                                alt={img.title}
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                                onError={e => { (e.target as HTMLElement).style.display = 'none' }}
-                              />
-                              {igModal.selectedImage === img.url && (
-                                <div className="absolute inset-0 bg-fuchsia-500/20 flex items-center justify-center">
-                                  <span className="text-white text-lg font-bold">&#10003;</span>
-                                </div>
-                              )}
-                            </button>
-                          ))}
-                        </div>
+                        <ImageGrid
+                          images={igModal.images}
+                          selectedUrl={igModal.selectedImage}
+                          onSelect={url => setIgModal(prev => prev ? { ...prev, selectedImage: prev.selectedImage === url ? null : url } : null)}
+                        />
+
+                        <p className="text-[10px] text-slate-400 text-center mt-2">
+                          {igModal.images.length} görsel bulundu
+                          {igModal.selectedImage && ' — 1 seçili'}
+                        </p>
 
                         {igModal.selectedImage && (
                           <button
                             onClick={() => handleCopy(igModal.selectedImage!)}
-                            className="w-full mt-3 py-2 text-xs font-bold text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-500/[0.08] hover:bg-fuchsia-500/[0.15] rounded-lg transition-colors"
+                            className="w-full mt-2 py-2 text-xs font-bold text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-500/[0.08] hover:bg-fuchsia-500/[0.15] rounded-lg transition-colors"
                           >
                             Görsel URL Kopyala
                           </button>
@@ -576,6 +560,76 @@ function NewsCard({
         </a>
       </div>
     </article>
+  )
+}
+
+function ImageGrid({
+  images,
+  selectedUrl,
+  onSelect,
+}: {
+  images: SearchImage[]
+  selectedUrl: string | null
+  onSelect: (url: string) => void
+}) {
+  const [failedThumbs, setFailedThumbs] = useState<Set<string>>(new Set())
+
+  // Reset failed thumbs when images change
+  useEffect(() => {
+    setFailedThumbs(new Set())
+  }, [images])
+
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {images.map(img => {
+        const isSelected = selectedUrl === img.url
+        const hasFailed = failedThumbs.has(img.id)
+
+        return (
+          <button
+            key={img.id}
+            onClick={() => onSelect(img.url)}
+            className={`group relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
+              isSelected
+                ? 'border-fuchsia-500 ring-2 ring-fuchsia-500/30 bg-fuchsia-500/10'
+                : 'border-black/[0.06] dark:border-white/[0.06] hover:border-fuchsia-400/60 hover:scale-[1.03]'
+            }`}
+          >
+            {!hasFailed ? (
+              <img
+                src={img.thumbnail}
+                alt={img.title}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                onError={() => setFailedThumbs(prev => new Set(prev).add(img.id))}
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 dark:bg-white/[0.04] text-slate-400">
+                <span className="text-lg">&#128247;</span>
+                <span className="text-[9px] mt-1">Yüklenemedi</span>
+              </div>
+            )}
+
+            {/* Selected indicator */}
+            {isSelected && (
+              <>
+                <div className="absolute inset-0 bg-fuchsia-500/20" />
+                <div className="absolute bottom-1 left-1 right-1 py-0.5 rounded text-[9px] font-bold text-center bg-fuchsia-500/80 text-white">
+                  Seçili
+                </div>
+              </>
+            )}
+
+            {/* Title tooltip on hover */}
+            {img.title && !isSelected && (
+              <div className="absolute inset-x-0 bottom-0 p-1.5 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="text-[9px] text-white truncate">{img.title}</p>
+              </div>
+            )}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
