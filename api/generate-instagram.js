@@ -5,6 +5,50 @@
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
 const GEMINI_BASE_URL = process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/models'
 
+// Robust JSON parser: handles markdown wrappers, unescaped newlines in string values
+function safeParseJSON(text) {
+  // Strip markdown code fences if present
+  let clean = text.trim()
+  if (clean.startsWith('```')) {
+    clean = clean.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+  }
+
+  // Attempt 1: direct parse
+  try { return JSON.parse(clean) } catch {}
+
+  // Attempt 2: escape unescaped control chars ONLY inside JSON string values
+  // Walk character by character, only transform when inside a quoted string
+  let fixed = ''
+  let inString = false
+  let escaped = false
+  for (let i = 0; i < clean.length; i++) {
+    const ch = clean[i]
+    if (escaped) {
+      fixed += ch
+      escaped = false
+      continue
+    }
+    if (ch === '\\' && inString) {
+      fixed += ch
+      escaped = true
+      continue
+    }
+    if (ch === '"') {
+      inString = !inString
+      fixed += ch
+      continue
+    }
+    if (inString && ch === '\n') { fixed += '\\n'; continue }
+    if (inString && ch === '\r') { fixed += '\\r'; continue }
+    if (inString && ch === '\t') { fixed += '\\t'; continue }
+    fixed += ch
+  }
+
+  try { return JSON.parse(fixed) } catch {}
+
+  throw new Error('Failed to parse Gemini JSON response')
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'POST only' })
@@ -24,51 +68,46 @@ export default async function handler(req, res) {
   const systemPrompt = `Sen İstanbul Bekliyor (@istbekliyor) kampanyasının Instagram içerik editörüsün.
 
 KİMLİK:
-- Muhalefet destekçisi, haber odaklı hesap
+- Muhalefet destekçisi, haber odaklı bir hesap
 - Türkiye gündemini takip eden, Ekrem İmamoğlu'nun tutuklanmasını protesto eden kampanya
-- Haber dili korunur ama uygun yerlerde kısa, keskin yorum eklenir
+- Haber dili korunur ama uygun yerlerde kısa, keskin bir muhalefet yorumu eklenir
 - Clickbait YAPMA, ama etkili hook yaz
 
-GÖREV: Verilen haberden 3 ayrı output üret.
+GÖREV: Verilen haberden TAM OLARAK 1 adet JSON objesi üret. DİZİ DÖNDÜRME.
 
-OUTPUT 1 — GÖRSEL ÜSTÜ METİN (imageText):
+OUTPUT 1 — imageText:
 - Instagram post görselinin alt kısmına yazılacak metin
-- Haberi öz ve net açıklar
-- Görsele sığacak uzunlukta (1-3 cümle, max ~200 karakter ideal)
-- Haber dili, sade, serif font'a uygun
+- Haberi yeniden yaz: öz, net, sade haber dili
+- 1-3 cümle, max ~200 karakter ideal
 - BÜYÜK HARF kullanma, normal cümle yapısı
+- Orijinal başlığı birebir kopyalama, kendi cümlenle yaz
 
-OUTPUT 2 — CAPTION HOOK (captionHook):
-- 2-3 BÜYÜK KELİME — dikkat çekici ama clickbait değil
-- Haberin özünü 2-3 kelimeye sıkıştır
-- Örnekler: "KUMPAS ÇÖKTÜ", "HESAP SORULACAK", "ADALET NEREDE", "SKANDAL ORTAYA ÇIKTI", "BAKAN ÇILDIRDI"
-- Sadece hook kelimeleri, tire veya ek açıklama KOYMA
+OUTPUT 2 — captionHook:
+- 2-3 BÜYÜK KELİME — haberin özünü vurucu şekilde sıkıştır
+- Jenerik kelimeler YASAK: "Son Dakika", "Gündem", "Haber Alert", "Flaş" gibi her habere yazılabilecek hook kullanma
+- Habere ÖZEL olmalı — o haberi okumadan bu hook'u yazamazsın
+- İYİ örnekler: "KUMPAS ÇÖKTÜ", "HESAP SORULACAK", "EVRAK TAKTİĞİ", "BAKAN HAREKETE GEÇTİ", "SUÇ DUYURUSU BOMBASI"
+- KÖTÜ örnekler: "SON DAKİKA", "GÜNDEM", "FLAŞ HABER", "ÖNEMLİ GELİŞME"
+- Sadece hook kelimeleri ver, tire veya ek açıklama KOYMA
 
-OUTPUT 3 — CAPTION BODY (captionBody):
-- Instagram caption metni
-- YAPI: Giriş → Gelişme → Sonuç (payoff sonda)
-- Giriş: Okuyucuyu haberin içine çeker, hook'un devamı niteliğinde
-- Gelişme: Ne oldu, neden önemli, bağlam verir
-- Sonuç/Payoff: Güçlü kapanış, gerekirse kampanya mesajına bağlar
-- Uygun yerlerde kısa muhalefet yorumu eklenebilir (ama abartılmaz)
-- Paragraflar arasında boş satır bırak
-- Sonda kaynak belirt: "Kaynak: [kaynak adı]"
-- En sonda: #İstanbulBekliyor hashtag'i
+OUTPUT 3 — captionBody:
+- Instagram caption metni, EN AZ 4-5 paragraf
+- YAPI: Giriş → Gelişme → Sonuç (payoff SONDA)
+- Giriş (1. paragraf): Okuyucuyu haberin içine çeker, merak uyandırır
+- Gelişme (2-3. paragraf): Ne oldu, neden önemli, bağlam verir, detayları açar
+- Yorum (4. paragraf): Kısa ve keskin muhalefet yorumu (abartılmadan)
+- Sonuç/Payoff (son paragraf): Güçlü kapanış, vurucu son cümle
+- Paragrafları \\n\\n ile ayır
+- Son satır: "Kaynak: [kaynak adı]" sonra \\n\\n#İstanbulBekliyor
 
-ZORUNLU JSON FORMATI:
-{
-  "imageText": "...",
-  "captionHook": "...",
-  "captionBody": "..."
-}`
+ÖNEMLİ: Sadece TEK bir JSON objesi dön, DİZİ DÖNME. Markdown code block KOYMA.`
 
   const userPrompt = `HABER:
 Başlık: ${title}
 Detay: ${description || 'Detay yok'}
 Kaynak: ${source || 'Bilinmiyor'}
-URL: ${url || ''}
 
-Bu haberden Instagram içeriği üret. JSON formatında dön.`
+Bu haberden Instagram içeriği üret. Tek bir JSON objesi dön: {"imageText":"...","captionHook":"...","captionBody":"..."}`
 
   try {
     const geminiUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${apiKey}`
@@ -93,29 +132,29 @@ Bu haberden Instagram içeriği üret. JSON formatında dön.`
     }
 
     const data = await response.json()
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text
 
-    if (!text) {
+    if (!rawText) {
       return res.status(502).json({ error: 'Empty Gemini response' })
     }
 
-    // Gemini sometimes returns unescaped control chars inside JSON string values
-    // Fix: escape raw newlines/tabs that appear inside string literals
-    const sanitized = text.replace(/[\x00-\x1f]/g, (ch) => {
-      if (ch === '\n') return '\\n'
-      if (ch === '\r') return '\\r'
-      if (ch === '\t') return '\\t'
-      return ''
-    })
+    let result = safeParseJSON(rawText)
 
-    const result = JSON.parse(sanitized)
+    // If Gemini returned an array, take the first item
+    if (Array.isArray(result)) {
+      result = result[0]
+    }
 
     // Validate required fields
-    if (!result.imageText || !result.captionHook || !result.captionBody) {
+    if (!result || !result.imageText || !result.captionHook || !result.captionBody) {
       return res.status(502).json({ error: 'Incomplete Gemini response', raw: result })
     }
 
-    return res.status(200).json(result)
+    return res.status(200).json({
+      imageText: result.imageText,
+      captionHook: result.captionHook,
+      captionBody: result.captionBody,
+    })
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Unknown error' })
   }
