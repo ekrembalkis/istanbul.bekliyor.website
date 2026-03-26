@@ -1,20 +1,5 @@
 {
-  "functions": {
-    "api/xquik.js": { "maxDuration": 60 },
-    "api/news.js": { "maxDuration": 30 },
-    "api/serpapi.js": { "maxDuration": 15 }
-  },
   "rewrites": [
-    { "source": "/api/serpapi", "destination": "/api/serpapi" },
-    { "source": "/api/news", "destination": "/api/news" },
-    { "source": "/api/xquik", "destination": "/api/xquik" },
-    { "source": "/api/image-proxy", "destination": "/api/image-proxy" },
-    { "source": "/api/style-webhook", "destination": "/api/style-webhook" },
-    { "source": "/api/generate-tweet", "destination": "/api/generate-tweet" },
-    { "source": "/api/extract-topics", "destination": "/api/extract-topics" },
-    { "source": "/api/generate-prompt", "destination": "/api/generate-prompt" },
-    { "source": "/api/search-viral", "destination": "/api/search-viral" },
-    { "source": "/api/analyze-personality", "destination": "/api/analyze-personality" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

@@ -6,11 +6,10 @@ export default {
     extend: {
       colors: {
         brand: {
-          red: '#E30A17',
-          'red-dark': '#B80813',
+          red: '#d20512',
+          'red-dark': '#a8040e',
           'red-light': '#FEF2F2',
-          gold: '#D4A843',
-          'gold-light': '#FDF8EF',
+          blue: '#1e5ca6',
         },
         slate: {
           850: '#1A1F2E',
@@ -40,6 +39,7 @@ export default {
         'fade-in': 'fadeIn 0.5s ease-out',
         'slide-up': 'slideUp 0.5s ease-out',
         'slide-in-right': 'slideInRight 0.3s ease-out',
+        'blur-in': 'blurIn 1s ease-out forwards',
       },
       keyframes: {
         counterPulse: {
@@ -57,6 +57,10 @@ export default {
         slideInRight: {
           '0%': { opacity: 0, transform: 'translateX(-8px)' },
           '100%': { opacity: 1, transform: 'translateX(0)' },
+        },
+        blurIn: {
+          '0%': { opacity: 0, filter: 'blur(12px)' },
+          '100%': { opacity: 1, filter: 'blur(0)' },
         },
       },
     },
