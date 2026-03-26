@@ -1,8 +1,10 @@
-import { getDayCount, getTimeBreakdown } from '../lib/utils'
+import { getDayCount } from '../lib/utils'
 
 const ARREST_DATE_LABEL = '19 Mart 2025'
 
 function HeroSection({ day }: { day: number }) {
+  const digits = String(day).split('')
+
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-4">
       {/* Decorative blurs */}
@@ -10,28 +12,29 @@ function HeroSection({ day }: { day: number }) {
       <div className="pointer-events-none absolute bottom-0 right-0 w-72 h-72 rounded-full bg-[#1e5ca6]/5 blur-[100px]" />
 
       {/* Curved SVG text */}
-      <div className="animate-blur-in w-full max-w-4xl mx-auto relative" style={{ height: 'clamp(180px, 40vw, 360px)' }}>
+      <div className="animate-blur-in w-full max-w-5xl mx-auto relative" style={{ height: 'clamp(120px, 28vw, 280px)' }}>
         <svg
-          viewBox="0 0 1000 360"
+          viewBox="0 0 1200 280"
           className="w-full h-full"
           preserveAspectRatio="xMidYMid meet"
         >
           <defs>
-            <path id="curve-title" d="M 50,280 Q 500,40 950,280" fill="transparent" />
-            <path id="curve-subtitle" d="M 80,330 Q 500,160 920,330" fill="transparent" />
+            <path id="curve-title" d="M 30,240 Q 600,20 1170,240" fill="transparent" />
+            <path id="curve-subtitle" d="M 150,270 Q 600,130 1050,270" fill="transparent" />
           </defs>
           <text
             textAnchor="middle"
-            className="font-serif"
             style={{ fontFamily: 'Newsreader, Georgia, serif' }}
           >
             <textPath
               href="#curve-title"
               startOffset="50%"
-              className="fill-white text-[48px] sm:text-[64px] md:text-[80px] lg:text-[110px] font-extrabold tracking-tight"
-              style={{ fontSize: 'clamp(48px, 8vw, 110px)' }}
+              fill="white"
+              fontSize="82"
+              fontWeight="800"
+              letterSpacing="4"
             >
-              HAK HUKUK ADALET
+              HAK  HUKUK  ADALET
             </textPath>
           </text>
           <text
@@ -41,8 +44,8 @@ function HeroSection({ day }: { day: number }) {
             <textPath
               href="#curve-subtitle"
               startOffset="50%"
-              className="fill-white/40 text-[12px] sm:text-[15px] md:text-[18px] lg:text-[22px]"
-              style={{ fontSize: 'clamp(12px, 2vw, 22px)' }}
+              fill="rgba(255,255,255,0.35)"
+              fontSize="18"
             >
               Adalet herkes için adalet olduğunda adalettir
             </textPath>
@@ -50,12 +53,23 @@ function HeroSection({ day }: { day: number }) {
         </svg>
       </div>
 
-      {/* Day counter */}
-      <div className="animate-blur-in delay-400 opacity-0 mt-8 flex flex-col items-center gap-2">
-        <span className="stat-number text-[#d20512] text-6xl sm:text-7xl md:text-8xl animate-counter-pulse">
-          {day}
-        </span>
-        <span className="text-white/50 text-sm sm:text-base font-sans tracking-wide uppercase">
+      {/* Day counter — flip-clock style */}
+      <div className="animate-blur-in delay-400 opacity-0 mt-6 flex flex-col items-center gap-4">
+        <div className="flex items-center gap-2">
+          {digits.map((digit, i) => (
+            <div
+              key={i}
+              className="w-14 h-20 sm:w-20 sm:h-28 md:w-24 md:h-32 rounded-xl bg-white/[0.06] ring-1 ring-white/10 flex items-center justify-center relative overflow-hidden"
+            >
+              <div className="absolute inset-x-0 top-0 h-1/2 bg-white/[0.03]" />
+              <span className="stat-number text-[#d20512] text-4xl sm:text-5xl md:text-6xl relative z-10">
+                {digit}
+              </span>
+              <div className="absolute inset-x-0 top-1/2 h-px bg-black/40" />
+            </div>
+          ))}
+        </div>
+        <span className="text-white/40 text-xs sm:text-sm font-sans tracking-[0.2em] uppercase">
           Gündür Özgürlüğünden Mahrum
         </span>
       </div>
@@ -67,82 +81,6 @@ function HeroSection({ day }: { day: number }) {
         </div>
       </div>
     </section>
-  )
-}
-
-function ContentSection({ day, time }: { day: number; time: ReturnType<typeof getTimeBreakdown> }) {
-  return (
-    <section className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-      <div className="relative overflow-hidden rounded-3xl ring-1 ring-white/10 bg-white/[0.02] backdrop-blur">
-        {/* Decorative blurs */}
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#d20512]/8 blur-3xl" />
-        <div className="pointer-events-none absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-white/5 blur-3xl" />
-
-        <div className="p-6 sm:p-10">
-          {/* Eyebrow */}
-          <span className="inline-flex items-center gap-2 text-[11px] text-white/60 bg-white/5 w-fit border border-white/10 rounded-full px-3 py-1.5 uppercase tracking-widest">
-            {ARREST_DATE_LABEL}'ten beri
-          </span>
-
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-white tracking-tight mt-6">
-            İstanbul Seçilmiş
-            <span className="block text-[#d20512]">Başkanını Bekliyor</span>
-          </h2>
-
-          <p className="text-base sm:text-lg text-white/50 max-w-2xl mt-4 font-sans leading-relaxed">
-            Milyonların oyuyla seçilen İstanbul Büyükşehir Belediye Başkanı Ekrem İmamoğlu,
-            hukuksuz bir şekilde tutuklu. Demokrasi ve adalet mücadelesi devam ediyor.
-          </p>
-
-          {/* Stats grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-10">
-            <StatCard value={day} label="Toplam Gün" highlight />
-            {time.years > 0 && (
-              <StatCard value={time.years} label="Yıl" />
-            )}
-            <StatCard value={time.months} label="Ay" />
-            <StatCard value={time.days} label="Gün" />
-          </div>
-
-          {/* Message cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
-            <MessageCard
-              icon={<ScaleIcon />}
-              title="Hukuk"
-              text="Evrensel hukuk normları ve Anayasa, temel hak ve özgürlüklerin korunmasını güvence altına alır. Hiç kimse yargı kararı olmadan özgürlüğünden mahrum bırakılamaz."
-            />
-            <MessageCard
-              icon={<ShieldIcon />}
-              title="Demokrasi"
-              text="Halkın iradesiyle seçilen belediye başkanının tutuklanması, milyonlarca vatandaşın iradesinin yok sayılması anlamına gelir."
-            />
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function StatCard({ value, label, highlight }: { value: number; label: string; highlight?: boolean }) {
-  return (
-    <div className="inner-card p-4 sm:p-5">
-      <p className={`stat-number text-3xl sm:text-4xl ${highlight ? 'text-[#d20512]' : 'text-white'}`}>
-        {value}
-      </p>
-      <p className="text-xs sm:text-sm text-white/40 mt-1 uppercase tracking-wide">{label}</p>
-    </div>
-  )
-}
-
-function MessageCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
-  return (
-    <div className="inner-card p-5 sm:p-6">
-      <div className="flex items-center gap-2 text-white/70 text-sm mb-3">
-        {icon}
-        <span className="font-medium font-sans">{title}</span>
-      </div>
-      <p className="text-sm text-white/50 leading-relaxed font-sans">{text}</p>
-    </div>
   )
 }
 
@@ -163,7 +101,6 @@ function DetaineesSection() {
 
       {/* Avatar row */}
       <div className="flex items-center justify-center gap-3 flex-wrap">
-        {/* Placeholder avatars (left) */}
         <PlaceholderAvatar />
         <PlaceholderAvatar />
         <PlaceholderAvatar />
@@ -188,7 +125,6 @@ function DetaineesSection() {
           </div>
         </div>
 
-        {/* Placeholder avatars (right) */}
         <PlaceholderAvatar />
         <PlaceholderAvatar />
         <PlaceholderAvatar />
@@ -229,35 +165,12 @@ function Footer() {
   )
 }
 
-/* Icons */
-function ScaleIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-      <path d="M7 21h10" />
-      <path d="M12 3v18" />
-      <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
-    </svg>
-  )
-}
-
-function ShieldIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-    </svg>
-  )
-}
-
 export default function LandingPage() {
   const day = getDayCount()
-  const time = getTimeBreakdown(day)
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans">
       <HeroSection day={day} />
-      <ContentSection day={day} time={time} />
       <DetaineesSection />
       <Footer />
     </div>
