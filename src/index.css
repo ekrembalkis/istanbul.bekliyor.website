@@ -6,7 +6,8 @@
    SEMANTIC THEME TOKENS — resolve at runtime
    :root = light (cream paper),  [data-theme="dark"] = dark (ink)
    ───────────────────────────────────────────── */
-:root {
+:root,
+[data-theme="light"] {
   --bg: #f1ece4;
   --paper: #fbf7ef;
   --ink: #141210;

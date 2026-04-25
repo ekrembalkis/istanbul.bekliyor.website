@@ -9,6 +9,8 @@ export const SITE = {
   primaryHashtag: '#İstanbulBekliyor',
   xHandle: '@istbekliyor',
   xProfileUrl: 'https://x.com/istbekliyor',
+  xIntentBase: 'https://x.com/intent/tweet',
+  publicHost: 'istanbulbekliyor.com',
 } as const
 
 // Paper-grain noise overlay (encoded once, referenced by background-image).

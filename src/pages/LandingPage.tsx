@@ -1,28 +1,11 @@
+import { Link } from 'react-router-dom'
 import { getDayCount } from '../lib/utils'
 import { useDetainees, type Detainee } from '../lib/detainees'
 import { SITE, PAPER_GRAIN_DATA_URL } from '../config/site'
-import { ThemeToggle } from '../components/ThemeToggle'
+import { Masthead } from '../components/public/Masthead'
+import { Footer } from '../components/public/Footer'
 
-const ARREST_DATE_LABEL = SITE.arrestDateLabel
 const ROMAN_YEAR = SITE.romanYear
-
-function Masthead({ day }: { day: number }) {
-  return (
-    <div className="col-span-12 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-rule pb-4 editorial-mono text-ink-muted">
-      <span className="text-ink">
-        <b className="font-semibold tracking-[0.22em]">{SITE.manifestoTitle}</b>
-        <span className="ml-3 opacity-60">— MANIFESTO</span>
-      </span>
-      <span className="hidden md:inline">
-        <span className="inline-block px-2.5 py-1 bg-accent text-white rounded-sm tracking-[0.22em]">
-          N°&nbsp;{String(day).padStart(3, '0')}
-        </span>
-      </span>
-      <span className="hidden lg:inline">İSTANBUL · {ROMAN_YEAR}</span>
-      <ThemeToggle />
-    </div>
-  )
-}
 
 function HeroHeadline() {
   return (
@@ -120,6 +103,12 @@ function HeroQuote() {
       <cite className="block mt-7 not-italic editorial-mono text-ink-muted">
         —&nbsp;&nbsp;Bildirgeden, Madde I
       </cite>
+      <Link
+        to="/bildirge"
+        className="inline-block mt-6 editorial-mono text-accent border-b border-current hover:text-ink transition-colors pb-[2px]"
+      >
+        → BİLDİRGEYİ OKU VE İMZALA
+      </Link>
     </div>
   )
 }
@@ -142,8 +131,14 @@ function HeroSection({ day }: { day: number }) {
         <HeroQuote />
       </div>
 
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-6 editorial-mono text-ink-muted opacity-60">
-        ↓ AŞAĞI
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-6 flex items-center gap-8 editorial-mono">
+        <span className="text-ink-muted opacity-60">↓ AŞAĞI</span>
+        <Link
+          to="/kart"
+          className="text-accent border-b border-current hover:text-ink transition-colors pb-[2px]"
+        >
+          → KARTINI ÜRET
+        </Link>
       </div>
     </section>
   )
@@ -182,14 +177,19 @@ function DetaineesSection() {
         </h2>
 
         {featured && (
-          <div className="grid grid-cols-12 gap-6 mt-16">
+          <Link
+            to={`/tutuklu/${featured.slug}`}
+            viewTransition
+            aria-label={`${featured.name} — profili aç`}
+            className="group grid grid-cols-12 gap-6 mt-16"
+          >
             <div className="col-span-12 md:col-span-5 lg:col-span-4">
               <div className="relative aspect-square w-full max-w-[420px]">
                 {featured.photo_url ? (
                   <img
                     src={featured.photo_url}
                     alt={featured.name}
-                    className="w-full h-full object-cover object-top"
+                    className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.01]"
                     style={{ filter: 'grayscale(0.15) contrast(1.05)' }}
                   />
                 ) : (
@@ -203,7 +203,7 @@ function DetaineesSection() {
             <div className="col-span-12 md:col-span-7 lg:col-span-8 flex flex-col justify-end">
               <span className="editorial-mono text-accent">— Madde 01 · Featured</span>
               <h3
-                className="editorial-h1 text-ink mt-3"
+                className="editorial-h1 text-ink mt-3 group-hover:text-accent transition-colors"
                 style={{ fontSize: 'clamp(40px, 6vw, 92px)' }}
               >
                 {featured.name}<span className="text-accent">.</span>
@@ -232,8 +232,11 @@ function DetaineesSection() {
                   </div>
                 </div>
               </div>
+              <span className="mt-6 editorial-mono text-ink-muted opacity-0 group-hover:opacity-100 transition-opacity">
+                → Profili aç
+              </span>
             </div>
-          </div>
+          </Link>
         )}
 
         {others.length > 0 && (
@@ -265,57 +268,33 @@ function DetaineesSection() {
 function DetaineeRow({ d, index }: { d: Detainee; index: number }) {
   const ariaLabel = `${d.name}${d.title ? `, ${d.title}` : ''} — ${d.day_count} gündür özgürlüğünden mahrum`
   return (
-    <li
-      aria-label={ariaLabel}
-      className="grid grid-cols-12 gap-4 items-baseline border-b border-rule py-5 group transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_4%,transparent)]"
-    >
-      <span aria-hidden="true" className="col-span-1 editorial-mono text-ink-muted">{String(index).padStart(2, '0')}</span>
-      <span
-        aria-hidden="true"
-        className="col-span-7 sm:col-span-6 font-serif text-ink group-hover:text-accent transition-colors"
-        style={{ fontSize: 'clamp(20px, 2vw, 28px)' }}
+    <li className="border-b border-rule">
+      <Link
+        to={`/tutuklu/${d.slug}`}
+        viewTransition
+        aria-label={ariaLabel}
+        className="grid grid-cols-12 gap-4 items-baseline py-5 group transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_4%,transparent)]"
       >
-        {d.name}
-      </span>
-      <span aria-hidden="true" className="hidden sm:block col-span-3 font-serif italic text-ink-muted">
-        {d.title ?? '—'}
-      </span>
-      <span
-        aria-hidden="true"
-        className="col-span-4 sm:col-span-2 text-right editorial-num text-accent leading-none"
-        style={{ fontSize: 'clamp(28px, 3vw, 44px)' }}
-      >
-        {d.day_count}
-      </span>
+        <span aria-hidden="true" className="col-span-1 editorial-mono text-ink-muted">{String(index).padStart(2, '0')}</span>
+        <span
+          aria-hidden="true"
+          className="col-span-7 sm:col-span-6 font-serif text-ink group-hover:text-accent transition-colors"
+          style={{ fontSize: 'clamp(20px, 2vw, 28px)' }}
+        >
+          {d.name}
+        </span>
+        <span aria-hidden="true" className="hidden sm:block col-span-3 font-serif italic text-ink-muted">
+          {d.title ?? '—'}
+        </span>
+        <span
+          aria-hidden="true"
+          className="col-span-4 sm:col-span-2 text-right editorial-num text-accent leading-none"
+          style={{ fontSize: 'clamp(28px, 3vw, 44px)' }}
+        >
+          {d.day_count}
+        </span>
+      </Link>
     </li>
-  )
-}
-
-function Footer() {
-  return (
-    <footer className="relative px-[6vw] pt-10 pb-16 border-t border-rule mt-24">
-      <div
-        className="absolute -top-[3px] left-[6vw] h-[7px] w-32 bg-accent"
-        aria-hidden="true"
-      />
-      <div className="max-w-[1480px] mx-auto grid grid-cols-12 gap-6 editorial-mono text-ink-muted">
-        <span className="col-span-12 sm:col-span-4">© Hak · Hukuk · Adalet</span>
-        <span className="col-span-12 sm:col-span-4 sm:text-center">
-          {ARREST_DATE_LABEL}'ten beri
-        </span>
-        <span className="col-span-12 sm:col-span-4 sm:text-right flex sm:justify-end gap-5">
-          <span className="text-accent">{SITE.primaryHashtag}</span>
-          <a
-            href={SITE.xProfileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-ink border-b border-current hover:text-accent transition-colors pb-[2px]"
-          >
-            {SITE.xHandle}
-          </a>
-        </span>
-      </div>
-    </footer>
   )
 }
 

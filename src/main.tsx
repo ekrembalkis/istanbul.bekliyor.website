@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { HelmetProvider } from 'react-helmet-async'
 import App from './App'
 import { initInstrumentation, SentryErrorBoundary } from './lib/instrumentation'
 import './index.css'
@@ -28,7 +29,9 @@ function Fallback({ error }: { error: unknown }) {
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <SentryErrorBoundary fallback={({ error }) => <Fallback error={error} />}>
-      <App />
+      <HelmetProvider>
+        <App />
+      </HelmetProvider>
     </SentryErrorBoundary>
   </React.StrictMode>
 )
