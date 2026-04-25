@@ -70,6 +70,8 @@ function HeroFigure({ day, dateStamp }: { day: number; dateStamp: string }) {
         <span>Ş.NO {dateStamp}</span>
       </div>
       <div
+        role="text"
+        aria-label={`${day} gündür özgürlüğünden mahrum`}
         className="editorial-num text-accent leading-[0.86] -mt-2 tabular-nums"
         style={{
           fontSize: 'clamp(120px, 22vw, 320px)',
@@ -261,19 +263,28 @@ function DetaineesSection() {
 }
 
 function DetaineeRow({ d, index }: { d: Detainee; index: number }) {
+  const ariaLabel = `${d.name}${d.title ? `, ${d.title}` : ''} — ${d.day_count} gündür özgürlüğünden mahrum`
   return (
-    <li className="grid grid-cols-12 gap-4 items-baseline border-b border-rule py-5 group transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_4%,transparent)]">
-      <span className="col-span-1 editorial-mono text-ink-muted">{String(index).padStart(2, '0')}</span>
+    <li
+      aria-label={ariaLabel}
+      className="grid grid-cols-12 gap-4 items-baseline border-b border-rule py-5 group transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_4%,transparent)]"
+    >
+      <span aria-hidden="true" className="col-span-1 editorial-mono text-ink-muted">{String(index).padStart(2, '0')}</span>
       <span
+        aria-hidden="true"
         className="col-span-7 sm:col-span-6 font-serif text-ink group-hover:text-accent transition-colors"
         style={{ fontSize: 'clamp(20px, 2vw, 28px)' }}
       >
         {d.name}
       </span>
-      <span className="hidden sm:block col-span-3 font-serif italic text-ink-muted">
+      <span aria-hidden="true" className="hidden sm:block col-span-3 font-serif italic text-ink-muted">
         {d.title ?? '—'}
       </span>
-      <span className="col-span-4 sm:col-span-2 text-right editorial-num text-accent leading-none" style={{ fontSize: 'clamp(28px, 3vw, 44px)' }}>
+      <span
+        aria-hidden="true"
+        className="col-span-4 sm:col-span-2 text-right editorial-num text-accent leading-none"
+        style={{ fontSize: 'clamp(28px, 3vw, 44px)' }}
+      >
         {d.day_count}
       </span>
     </li>

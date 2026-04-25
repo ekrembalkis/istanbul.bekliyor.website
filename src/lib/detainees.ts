@@ -81,8 +81,9 @@ export function useDetainees() {
       if (cancelled) return
 
       if (err || !rows) {
-        const msg = err?.message ?? 'Bilinmeyen Supabase hatası'
-        console.warn('[detainees] Supabase fetch failed, using fallback:', msg)
+        // Redact: only first 80 chars of the error message, no stack/URL/row data.
+        const msg = (err?.message ?? 'Bilinmeyen Supabase hatası').slice(0, 80)
+        console.warn('[detainees] fetch failed, using fallback')
         setError(msg)
         setData(withComputedDays(FALLBACK))
         setLoading(false)
@@ -99,7 +100,8 @@ export function useDetainees() {
         }
       }
       if (dropped > 0) {
-        console.warn(`[detainees] ${dropped} row(s) dropped — schema mismatch`)
+        // Count only — never log raw row content (may contain PII like notes/photo paths).
+        console.warn(`[detainees] ${dropped} row(s) dropped (schema mismatch)`)
       }
       setData(withComputedDays(valid.length > 0 ? valid : FALLBACK))
       setLoading(false)
