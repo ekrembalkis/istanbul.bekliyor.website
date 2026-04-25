@@ -24,7 +24,18 @@ const PATTERNS = [
 ]
 
 // Lines containing one of these substrings are anon Supabase keys → expected.
+// (Useful in dev when symbol names survive; after Vite minification the
+// literal-value allowlist below does the real work.)
 const ANON_ALLOWLIST = ['VITE_SUPABASE_ANON_KEY', 'supabase.anonKey', 'sbp_anon']
+
+// Vite inlines `import.meta.env.VITE_*` at build time, so the symbol name is
+// gone from the bundle. We accept an exact-value match against the env vars
+// known to be intentionally public.
+const PUBLIC_VALUES = new Set(
+  [process.env.VITE_SUPABASE_ANON_KEY, process.env.VITE_SUPABASE_URL]
+    .map(v => v?.trim())
+    .filter(Boolean),
+)
 
 function* walk(dir) {
   for (const entry of readdirSync(dir)) {
@@ -49,9 +60,11 @@ for (const file of walk(DIST)) {
     if (!m) continue
     const idx = m.index ?? 0
     const line = content.slice(Math.max(0, idx - 60), idx + 60)
-    const isAnon = name.startsWith('JWT') && ANON_ALLOWLIST.some(a => line.includes(a))
-    if (isAnon) continue
-    findings.push({ file, name, sample: m[0].slice(0, 24) + '…' })
+    const matched = m[0]
+    const isAnonByContext = name.startsWith('JWT') && ANON_ALLOWLIST.some(a => line.includes(a))
+    const isPublicByValue = PUBLIC_VALUES.has(matched)
+    if (isAnonByContext || isPublicByValue) continue
+    findings.push({ file, name, sample: matched.slice(0, 24) + '…' })
   }
 }
 
