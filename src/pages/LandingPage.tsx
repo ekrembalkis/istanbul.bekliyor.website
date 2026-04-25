@@ -1,165 +1,298 @@
 import { getDayCount } from '../lib/utils'
+import { useDetainees, type Detainee } from '../lib/detainees'
+import { SITE, PAPER_GRAIN_DATA_URL } from '../config/site'
 
-const ARREST_DATE_LABEL = '19 Mart 2025'
+const ARREST_DATE_LABEL = SITE.arrestDateLabel
+const ROMAN_YEAR = SITE.romanYear
+
+function Masthead({ day }: { day: number }) {
+  return (
+    <div className="col-span-12 flex flex-wrap items-end justify-between gap-y-3 border-b border-rule pb-4 editorial-mono text-ink-muted">
+      <span className="text-paper">
+        <b className="font-semibold tracking-[0.22em]">{SITE.manifestoTitle}</b>
+        <span className="ml-3 opacity-60">— MANIFESTO</span>
+      </span>
+      <span>
+        <span className="inline-block px-2.5 py-1 bg-brand-red text-white rounded-sm tracking-[0.22em]">
+          N°&nbsp;{String(day).padStart(3, '0')}
+        </span>
+      </span>
+      <span>İSTANBUL · {ROMAN_YEAR}</span>
+    </div>
+  )
+}
+
+function HeroHeadline() {
+  return (
+    <>
+      <div className="col-span-12 md:col-span-8 mt-16 editorial-mono text-brand-red editorial-reveal">
+        — Halkın iradesi üzerine bir bildiri
+      </div>
+
+      <h1
+        className="col-span-12 mt-4 editorial-h1 text-paper editorial-reveal"
+        style={{
+          fontSize: 'clamp(64px, 13vw, 220px)',
+          animationDelay: '0.15s',
+        }}
+      >
+        Adalet <em className="italic font-medium text-brand-red">herkes</em> için
+        <br />
+        adalet{' '}
+        <span
+          className="editorial-display text-[#a89880] inline-block"
+          style={{ transform: 'translateY(-0.05em)' }}
+        >
+          olduğunda
+        </span>
+        <br />
+        adalet<em className="italic font-medium text-brand-red">tir.</em>
+      </h1>
+
+      <div className="col-span-12 mt-12 relative">
+        <div className="h-px bg-rule" />
+        <div className="absolute -top-[3px] left-0 h-[7px] w-32 bg-brand-red" />
+      </div>
+    </>
+  )
+}
+
+function HeroFigure({ day, dateStamp }: { day: number; dateStamp: string }) {
+  return (
+    <div
+      className="col-span-12 md:col-span-5 mt-12 editorial-reveal"
+      style={{ animationDelay: '0.35s' }}
+    >
+      <div className="flex justify-between items-end border-b border-rule pb-2 editorial-mono text-ink-muted">
+        <span>Tutsaklık · gün sayacı</span>
+        <span>Ş.NO {dateStamp}</span>
+      </div>
+      <div
+        className="editorial-num text-brand-red leading-[0.86] -mt-2 tabular-nums"
+        style={{
+          fontSize: 'clamp(120px, 22vw, 320px)',
+          textShadow: '0 0 60px rgba(226, 43, 53, 0.28)',
+        }}
+      >
+        {day}
+      </div>
+      <p
+        className="font-serif italic text-[#cabfae] mt-2 max-w-[38ch]"
+        style={{ fontSize: 'clamp(18px, 1.6vw, 22px)', lineHeight: 1.3 }}
+      >
+        Gündür özgürlüğünden mahrum. Her doğan güneş, ödenmemiş bir borçtur; her batan, çoğalan bir ses.
+      </p>
+    </div>
+  )
+}
+
+function HeroQuote() {
+  return (
+    <div
+      className="col-span-12 md:col-span-7 md:mt-16 mt-8 flex flex-col justify-center editorial-reveal"
+      style={{ animationDelay: '0.5s' }}
+    >
+      <blockquote
+        className="font-serif text-paper relative"
+        style={{
+          fontSize: 'clamp(22px, 2.4vw, 34px)',
+          lineHeight: 1.32,
+          letterSpacing: '-0.01em',
+          textIndent: '-0.45em',
+        }}
+      >
+        <span
+          className="editorial-display float-left text-brand-red"
+          style={{
+            fontSize: '5em',
+            lineHeight: 0.85,
+            margin: '0.06em 0.12em -0.05em -0.04em',
+          }}
+        >
+          B
+        </span>
+        ir hak, yalnızca herkes için savunulduğunda haktır. Hukukun susturulduğu yerde, sessizlik suç ortağı olur — ve biz sessiz kalmayı reddediyoruz.
+      </blockquote>
+      <cite className="block mt-7 not-italic editorial-mono text-ink-muted">
+        —&nbsp;&nbsp;Bildirgeden, Madde I
+      </cite>
+    </div>
+  )
+}
 
 function HeroSection({ day }: { day: number }) {
-  const digits = String(day).split('')
+  const today = new Date()
+  const dateStamp =
+    String(today.getDate()).padStart(2, '0') +
+    '/' +
+    String(today.getMonth() + 1).padStart(2, '0') +
+    '/' +
+    today.getFullYear()
 
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-4">
-      {/* Decorative blurs */}
-      <div className="pointer-events-none absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[#d20512]/10 blur-[120px]" />
-      <div className="pointer-events-none absolute bottom-0 right-0 w-72 h-72 rounded-full bg-[#1e5ca6]/5 blur-[100px]" />
-
-      {/* Curved SVG text */}
-      <div className="animate-blur-in w-full max-w-5xl mx-auto relative" style={{ height: 'clamp(120px, 28vw, 280px)' }}>
-        <svg
-          viewBox="0 0 1200 280"
-          className="w-full h-full"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <defs>
-            <path id="curve-title" d="M 30,240 Q 600,20 1170,240" fill="transparent" />
-            <path id="curve-subtitle" d="M 150,270 Q 600,130 1050,270" fill="transparent" />
-          </defs>
-          <text
-            textAnchor="middle"
-            style={{ fontFamily: 'Newsreader, Georgia, serif' }}
-          >
-            <textPath
-              href="#curve-title"
-              startOffset="50%"
-              fill="white"
-              fontSize="82"
-              fontWeight="800"
-              letterSpacing="4"
-            >
-              HAK  HUKUK  ADALET
-            </textPath>
-          </text>
-          <text
-            textAnchor="middle"
-            style={{ fontFamily: 'DM Sans, system-ui, sans-serif' }}
-          >
-            <textPath
-              href="#curve-subtitle"
-              startOffset="50%"
-              fill="rgba(255,255,255,0.35)"
-              fontSize="18"
-            >
-              Adalet herkes için adalet olduğunda adalettir
-            </textPath>
-          </text>
-        </svg>
+    <section className="relative min-h-screen px-[6vw] py-16 pb-32 overflow-hidden">
+      <div className="relative grid grid-cols-12 gap-6 max-w-[1480px] mx-auto">
+        <Masthead day={day} />
+        <HeroHeadline />
+        <HeroFigure day={day} dateStamp={dateStamp} />
+        <HeroQuote />
       </div>
 
-      {/* Day counter — flip-clock style */}
-      <div className="animate-blur-in delay-400 opacity-0 mt-6 flex flex-col items-center gap-4">
-        <div className="flex items-center gap-2">
-          {digits.map((digit, i) => (
-            <div
-              key={i}
-              className="w-14 h-20 sm:w-20 sm:h-28 md:w-24 md:h-32 rounded-xl bg-white/[0.06] ring-1 ring-white/10 flex items-center justify-center relative overflow-hidden"
-            >
-              <div className="absolute inset-x-0 top-0 h-1/2 bg-white/[0.03]" />
-              <span className="stat-number text-[#d20512] text-4xl sm:text-5xl md:text-6xl relative z-10">
-                {digit}
-              </span>
-              <div className="absolute inset-x-0 top-1/2 h-px bg-black/40" />
-            </div>
-          ))}
-        </div>
-        <span className="text-white/40 text-xs sm:text-sm font-sans tracking-[0.2em] uppercase">
-          Gündür Özgürlüğünden Mahrum
-        </span>
-      </div>
-
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 animate-blur-in delay-800 opacity-0">
-        <div className="w-5 h-8 rounded-full border-2 border-white/20 flex items-start justify-center p-1">
-          <div className="w-1 h-2 rounded-full bg-white/40 animate-bounce" />
-        </div>
+      {/* scroll indicator */}
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-6 editorial-mono text-ink-muted opacity-60">
+        ↓ AŞAĞI
       </div>
     </section>
   )
 }
 
 function DetaineesSection() {
+  const { data } = useDetainees()
+  const detainees = data ?? []
+  const featured = detainees.find(d => d.is_featured) ?? detainees[0]
+  const others = detainees.filter(d => d.id !== featured?.id)
+
   return (
-    <section className="relative max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
-      <div className="text-center mb-12">
-        <span className="inline-flex items-center gap-2 text-[11px] text-white/60 bg-white/5 w-fit border border-white/10 rounded-full px-3 py-1.5 uppercase tracking-widest mx-auto">
-          Siyasi Tutuklular
-        </span>
-        <h2 className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-tight mt-4">
-          Özgürlüklerini Bekleyenler
-        </h2>
-        <p className="text-sm sm:text-base text-white/40 mt-2 font-sans">
-          Adalet herkesin hakkıdır
-        </p>
-      </div>
-
-      {/* Avatar row */}
-      <div className="flex items-center justify-center gap-3 flex-wrap">
-        <PlaceholderAvatar />
-        <PlaceholderAvatar />
-        <PlaceholderAvatar />
-
-        {/* Central figure — Ekrem İmamoğlu */}
-        <div className="flex flex-col items-center gap-3 mx-4">
-          <div className="relative">
-            <img
-              src="/imamoglu.jpg"
-              alt="Ekrem İmamoğlu"
-              className="w-24 h-24 sm:w-32 sm:h-32 object-cover object-top rounded-full ring-2 ring-[#d20512] shadow-lg shadow-[#d20512]/20"
-            />
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#d20512] flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-center">
-            <p className="text-white font-semibold text-sm sm:text-base font-sans">Ekrem İmamoğlu</p>
-            <p className="text-white/40 text-xs font-mono">İBB Başkanı</p>
-          </div>
+    <section className="relative px-[6vw] py-24 sm:py-32">
+      <div className="max-w-[1480px] mx-auto">
+        <div className="grid grid-cols-12 gap-6 border-b border-rule pb-4 editorial-mono text-ink-muted">
+          <span className="col-span-12 sm:col-span-4 text-brand-red">— Siyasi tutuklular</span>
+          <span className="col-span-12 sm:col-span-4 sm:text-center">N° {String(detainees.length).padStart(2, '0')} kişi</span>
+          <span className="col-span-12 sm:col-span-4 sm:text-right">Roster · {ROMAN_YEAR}</span>
         </div>
 
-        <PlaceholderAvatar />
-        <PlaceholderAvatar />
-        <PlaceholderAvatar />
+        <h2
+          className="editorial-h1 text-paper mt-10"
+          style={{ fontSize: 'clamp(48px, 7vw, 110px)' }}
+        >
+          Özgürlüklerini{' '}
+          <em className="italic editorial-display text-[#a89880]">bekleyenler.</em>
+        </h2>
+
+        {featured && (
+          <div className="grid grid-cols-12 gap-6 mt-16">
+            <div className="col-span-12 md:col-span-5 lg:col-span-4">
+              <div className="relative aspect-square w-full max-w-[420px]">
+                {featured.photo_url ? (
+                  <img
+                    src={featured.photo_url}
+                    alt={featured.name}
+                    className="w-full h-full object-cover object-top grayscale-[0.15]"
+                    style={{ filter: 'contrast(1.05)' }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-rule" />
+                )}
+                <div className="absolute -left-2 top-0 bottom-0 w-[3px] bg-brand-red" />
+                <div className="absolute -bottom-3 left-0 right-0 h-[2px] bg-rule" />
+              </div>
+            </div>
+
+            <div className="col-span-12 md:col-span-7 lg:col-span-8 flex flex-col justify-end">
+              <span className="editorial-mono text-brand-red">— Madde 01 · Featured</span>
+              <h3
+                className="editorial-h1 text-paper mt-3"
+                style={{ fontSize: 'clamp(40px, 6vw, 92px)' }}
+              >
+                {featured.name}<span className="text-brand-red">.</span>
+              </h3>
+              {featured.title && (
+                <p className="font-serif italic text-[#cabfae] mt-2" style={{ fontSize: 'clamp(18px, 1.4vw, 22px)' }}>
+                  {featured.title}
+                </p>
+              )}
+              <div className="mt-8 grid grid-cols-3 border-t border-rule pt-5 max-w-md gap-6">
+                <div>
+                  <div className="editorial-mono text-ink-muted">Tutsaklık</div>
+                  <div className="editorial-num text-brand-red mt-1 leading-none" style={{ fontSize: '56px' }}>
+                    {featured.day_count}
+                  </div>
+                  <div className="editorial-mono text-ink-muted mt-1">gün</div>
+                </div>
+                <div className="col-span-2">
+                  <div className="editorial-mono text-ink-muted">Başlangıç</div>
+                  <div className="font-serif text-paper mt-1" style={{ fontSize: '22px' }}>
+                    {new Date(featured.arrest_date).toLocaleDateString('tr-TR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {others.length > 0 && (
+          <div className="mt-24">
+            <div className="editorial-mono text-ink-muted border-b border-rule pb-3 grid grid-cols-12 gap-4">
+              <span className="col-span-1">№</span>
+              <span className="col-span-7 sm:col-span-6">İsim</span>
+              <span className="hidden sm:block col-span-3">Ünvan</span>
+              <span className="col-span-4 sm:col-span-2 text-right">Gün</span>
+            </div>
+            <ul>
+              {others.map((d, i) => (
+                <DetaineeRow key={d.id} d={d} index={i + 2} />
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {others.length === 0 && (
+          <div className="mt-20 editorial-mono text-ink-muted text-center">
+            — Roster güncelleniyor —
+          </div>
+        )}
       </div>
     </section>
   )
 }
 
-function PlaceholderAvatar() {
+function DetaineeRow({ d, index }: { d: Detainee; index: number }) {
   return (
-    <div className="transition-all duration-300 hover:w-16 hover:h-16 hover:ring-white/25 hover:z-10 w-8 h-8 rounded-full ring-1 ring-white/20 bg-white/[0.06] flex items-center justify-center flex-shrink-0">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/20">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-      </svg>
-    </div>
+    <li className="grid grid-cols-12 gap-4 items-baseline border-b border-rule py-5 group hover:bg-white/[0.02] transition-colors">
+      <span className="col-span-1 editorial-mono text-ink-muted">{String(index).padStart(2, '0')}</span>
+      <span
+        className="col-span-7 sm:col-span-6 font-serif text-paper group-hover:text-brand-red transition-colors"
+        style={{ fontSize: 'clamp(20px, 2vw, 28px)' }}
+      >
+        {d.name}
+      </span>
+      <span className="hidden sm:block col-span-3 font-serif italic text-ink-muted">
+        {d.title ?? '—'}
+      </span>
+      <span className="col-span-4 sm:col-span-2 text-right editorial-num text-brand-red leading-none" style={{ fontSize: 'clamp(28px, 3vw, 44px)' }}>
+        {d.day_count}
+      </span>
+    </li>
   )
 }
 
 function Footer() {
   return (
-    <footer className="border-t border-white/[0.06] py-8 px-4">
-      <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-white/30 text-xs font-sans">
-        <span>{ARREST_DATE_LABEL}'ten beri</span>
-        <div className="flex items-center gap-4">
-          <span className="text-[#d20512]/60">#İstanbulBekliyor</span>
+    <footer className="relative px-[6vw] pt-10 pb-16 border-t border-rule mt-24">
+      <div
+        className="absolute -top-[3px] left-[6vw] h-[7px] w-32 bg-brand-red"
+        aria-hidden="true"
+      />
+      <div className="max-w-[1480px] mx-auto grid grid-cols-12 gap-6 editorial-mono text-ink-muted">
+        <span className="col-span-12 sm:col-span-4">© Hak · Hukuk · Adalet</span>
+        <span className="col-span-12 sm:col-span-4 sm:text-center">
+          {ARREST_DATE_LABEL}'ten beri
+        </span>
+        <span className="col-span-12 sm:col-span-4 sm:text-right flex sm:justify-end gap-5">
+          <span className="text-brand-red">{SITE.primaryHashtag}</span>
           <a
-            href="https://x.com/istbekliyor"
+            href={SITE.xProfileUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-white/50 transition-colors"
+            className="text-paper border-b border-paper hover:text-brand-red hover:border-brand-red transition-colors pb-[2px]"
           >
-            @istbekliyor
+            {SITE.xHandle}
           </a>
-        </div>
+        </span>
       </div>
     </footer>
   )
@@ -169,10 +302,19 @@ export default function LandingPage() {
   const day = getDayCount()
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white font-sans">
-      <HeroSection day={day} />
-      <DetaineesSection />
-      <Footer />
+    <div className="min-h-screen bg-[#0a0a0a] text-paper relative">
+      {/* Subtle paper grain overlay */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.04] mix-blend-overlay"
+        style={{ backgroundImage: `url("${PAPER_GRAIN_DATA_URL}")` }}
+      />
+
+      <div className="relative z-10">
+        <HeroSection day={day} />
+        <DetaineesSection />
+        <Footer />
+      </div>
     </div>
   )
 }
