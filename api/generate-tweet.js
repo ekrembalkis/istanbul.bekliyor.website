@@ -1,6 +1,8 @@
 // Serverless tweet generator: Gemini + Style DNA + Xquik Score Loop
 // POST /api/generate-tweet { styleUsername, topic, tone, goal, count, cloneMode }
 
+import { geminiGenerate, sanitizePromptInput, handleGeminiError } from './_lib/gemini.js'
+
 // ── Language detection heuristic (fallback when DNA has no language) ──
 function detectLanguage(tweets) {
   const text = tweets.join(' ').toLowerCase()
@@ -245,9 +247,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const GEMINI_KEY = (process.env.GEMINI_API_KEY || '').trim()
   const XQUIK_KEY = (process.env.XQUIK_API_KEY || '').trim()
-  if (!GEMINI_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' })
+  if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' })
   if (!XQUIK_KEY) return res.status(500).json({ error: 'XQUIK_API_KEY not configured' })
 
   const {
@@ -406,17 +407,20 @@ ${t.dnaTraits}: Formality ${traits.formality || 0}/100, Humor ${traits.humor || 
       modeInstruction = t.tweetInstruction(topic, topicContext, tone, goal, count)
     }
 
-    // Gemini URL (reused across calls)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_KEY}`
-
-    // Track Gemini token usage
+    // Track Gemini token usage across all helper calls in this request.
     const geminiUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0, calls: 0 }
-    function trackUsage(data) {
-      if (data?.usageMetadata) {
+    /** Wrap geminiGenerate() and accumulate usage. Returns { text, raw } or null on error. */
+    async function callGemini({ prompt, systemInstruction, generationConfigOverrides }) {
+      try {
+        const result = await geminiGenerate({ prompt, systemInstruction, generationConfigOverrides })
         geminiUsage.calls++
-        geminiUsage.promptTokens += data.usageMetadata.promptTokenCount || 0
-        geminiUsage.completionTokens += data.usageMetadata.candidatesTokenCount || 0
-        geminiUsage.totalTokens += data.usageMetadata.totalTokenCount || 0
+        geminiUsage.promptTokens += result.usage.promptTokens
+        geminiUsage.completionTokens += result.usage.completionTokens
+        geminiUsage.totalTokens += result.usage.totalTokens
+        return result
+      } catch (err) {
+        console.warn('generate-tweet: Gemini sub-call failed', err.status, err.message)
+        return null
       }
     }
 
@@ -527,29 +531,17 @@ Number each. The thoughts in the monologue should show in the tweets.
 Write NOTHING else — only monologue and tweets.`
     }
 
-    // 9. Generate with Gemini (systemInstruction + contents split)
-    const geminiRes = await fetch(geminiUrl,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: personaInstruction }] },
-          contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-          generationConfig: { temperature: 0.85, maxOutputTokens: mode === 'thread' ? 1600 : 1200 },
-        }),
-      }
-    )
+    // 9. Generate with Gemini (systemInstruction + user message split)
+    const mainResult = await callGemini({
+      systemInstruction: personaInstruction,
+      prompt: userMessage,
+      generationConfigOverrides: { maxOutputTokens: mode === 'thread' ? 1600 : 1200 },
+    })
 
-    if (!geminiRes.ok) {
-      const err = await geminiRes.json().catch(() => ({}))
-      return res.status(500).json({ error: 'Gemini API error', detail: err.error?.message })
+    if (!mainResult) {
+      return res.status(502).json({ error: 'Gemini main generation failed', geminiUsage })
     }
-
-    const geminiData = await geminiRes.json()
-    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
-
-    // Track main generation usage
-    trackUsage(geminiData)
+    const rawText = mainResult.text
 
     // Strip inner monologue before parsing tweets
     const textWithoutMonolog = rawText.replace(/<monolog>[\s\S]*?<\/monolog>/gi, '').trim()
@@ -578,18 +570,13 @@ Write NOTHING else — only monologue and tweets.`
       // Thread pre-check: extend short tweets
       if (mode === 'thread' && currentDraft.length < 80) {
         const extendPrompt = t.extendPrompt(currentDraft, cloneMode && !styleUsesQuestion)
-        const extRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_KEY}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: extendPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 200 } }) }
-        )
-        if (extRes.ok) {
-          const extData = await extRes.json()
-          const extended = extData.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-          if (extended && extended.length >= 80) {
-            currentDraft = extended.replace(/^\d+[\.\)\/]\s*/, '').replace(/^["']|["']$/g, '')
-          }
-          trackUsage(extData)
+        const extResult = await callGemini({
+          prompt: extendPrompt,
+          generationConfigOverrides: { maxOutputTokens: 200 },
+        })
+        const extended = extResult?.text?.trim()
+        if (extended && extended.length >= 80) {
+          currentDraft = extended.replace(/^\d+[\.\)\/]\s*/, '').replace(/^["']|["']$/g, '')
         }
       }
 
@@ -623,24 +610,13 @@ Write NOTHING else — only monologue and tweets.`
         if (currentDraft.length < minLength) {
           const targetRange = mode === 'thread' ? '80-180' : '60-120'
           const fixPrompt = t.fixShortPrompt(currentDraft, targetRange, cloneMode && !styleUsesQuestion)
-          const fixRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_KEY}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [{ parts: [{ text: fixPrompt }] }],
-                generationConfig: { temperature: 0.8, maxOutputTokens: 200 },
-              }),
-            }
-          )
-          if (fixRes.ok) {
-            const fixData = await fixRes.json()
-            const fixed = fixData.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-            if (fixed && fixed.length > 40) {
-              currentDraft = fixed.replace(/^\d+[\.\)]\s*/, '').replace(/^["']|["']$/g, '')
-            }
-            trackUsage(fixData)
+          const fixResult = await callGemini({
+            prompt: fixPrompt,
+            generationConfigOverrides: { maxOutputTokens: 200 },
+          })
+          const fixed = fixResult?.text?.trim()
+          if (fixed && fixed.length > 40) {
+            currentDraft = fixed.replace(/^\d+[\.\)]\s*/, '').replace(/^["']|["']$/g, '')
           }
         }
       }
@@ -665,31 +641,19 @@ Write NOTHING else — only monologue and tweets.`
               ? `Bu tweeti ayni stilde yeniden yaz ama su kurallara uy:\n${fixHints.map(h => '- ' + h).join('\n')}\n\nOrijinal: "${currentDraft}"\n\nSadece yeni tweet metnini yaz.`
               : `Rewrite this tweet in the same style but fix these issues:\n${fixHints.map(h => '- ' + h).join('\n')}\n\nOriginal: "${currentDraft}"\n\nWrite only the new tweet text.`
 
-            try {
-              const fixRes = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_KEY}`,
-                { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ contents: [{ parts: [{ text: styleFixPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 200 } }) }
-              )
-              if (fixRes.ok) {
-                const fixData = await fixRes.json()
-                const fixed = fixData.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-                if (fixed && fixed.length > 30) {
-                  const cleanFixed = fixed.replace(/^\d+[\.\)\/]\s*/, '').replace(/^["']|["']$/g, '')
-                  const newMatch = fingerprintMatchServer(cleanFixed, fingerprint)
-                  if (newMatch > styleMatch) {
-                    currentDraft = cleanFixed
-                    styleMatch = newMatch
-                  }
-                }
-                if (fixData.usageMetadata) {
-                  geminiUsage.calls++
-                  geminiUsage.promptTokens += fixData.usageMetadata.promptTokenCount || 0
-                  geminiUsage.completionTokens += fixData.usageMetadata.candidatesTokenCount || 0
-                  geminiUsage.totalTokens += fixData.usageMetadata.totalTokenCount || 0
-                }
+            const styleFixResult = await callGemini({
+              prompt: styleFixPrompt,
+              generationConfigOverrides: { maxOutputTokens: 200 },
+            })
+            const fixed = styleFixResult?.text?.trim()
+            if (fixed && fixed.length > 30) {
+              const cleanFixed = fixed.replace(/^\d+[\.\)\/]\s*/, '').replace(/^["']|["']$/g, '')
+              const newMatch = fingerprintMatchServer(cleanFixed, fingerprint)
+              if (newMatch > styleMatch) {
+                currentDraft = cleanFixed
+                styleMatch = newMatch
               }
-            } catch { /* fingerprint fix optional */ }
+            }
           }
         }
       }
@@ -702,42 +666,32 @@ Write NOTHING else — only monologue and tweets.`
             ? `Gercek tweetler:\n${styleTweets.slice(0, 5).map((tw2,i) => `${i+1}. ${tw2}`).join('\n')}\n\nUretilen tweet: "${currentDraft}"\n\nBu tweet bu kisiye ne kadar benziyor? Neyi dogru yapmis, neyi YANLIS? 2 satir max.`
             : `Real tweets:\n${styleTweets.slice(0, 5).map((tw2,i) => `${i+1}. ${tw2}`).join('\n')}\n\nGenerated: "${currentDraft}"\n\nHow well does this match? What's right, what's WRONG? 2 lines max.`
 
-          const critRes = await fetch(geminiUrl, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: critiquePrompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 150 } })
+          const critResult = await callGemini({
+            prompt: critiquePrompt,
+            generationConfigOverrides: { maxOutputTokens: 150 },
           })
+          const critique = critResult?.text || ''
 
-          if (critRes.ok) {
-            const critData = await critRes.json()
-            trackUsage(critData)
-            const critique = critData.candidates?.[0]?.content?.parts?.[0]?.text || ''
-
-            if (critique) {
+          if (critique) {
               // Step 2: Fix based on critique
               const refinePrompt = lang === 'tr'
                 ? `ORIJINAL: "${currentDraft}"\n\nELESTIRI: ${critique}\n\nBu elestiriyi dikkate alarak tweeti DUZELT. Kisinin gercek tarzina daha cok benzesin.\nGercek ornekler: ${styleTweets.slice(0, 3).join(' | ')}\n\nSadece duzeltilmis tweet metnini yaz.`
                 : `ORIGINAL: "${currentDraft}"\n\nCRITIQUE: ${critique}\n\nFix based on critique. Match the real style better.\nReal examples: ${styleTweets.slice(0, 3).join(' | ')}\n\nWrite only the fixed tweet.`
 
-              const refineRes = await fetch(geminiUrl, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: refinePrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 200 } })
+              const refineResult = await callGemini({
+                prompt: refinePrompt,
+                generationConfigOverrides: { maxOutputTokens: 200 },
               })
-
-              if (refineRes.ok) {
-                const refineData = await refineRes.json()
-                trackUsage(refineData)
-                const refined = refineData.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-                if (refined && refined.length > 30) {
-                  const cleanRefined = refined.replace(/^\d+[\.\)\/]\s*/, '').replace(/^["']|["']$/g, '')
-                  const newMatch = fingerprint ? fingerprintMatchServer(cleanRefined, fingerprint) : 100
-                  if (newMatch >= (styleMatch || 0)) {
-                    currentDraft = cleanRefined
-                    styleMatch = newMatch
-                    tweetOverrides.push('iterative-refined')
-                  }
+              const refined = refineResult?.text?.trim()
+              if (refined && refined.length > 30) {
+                const cleanRefined = refined.replace(/^\d+[\.\)\/]\s*/, '').replace(/^["']|["']$/g, '')
+                const newMatch = fingerprint ? fingerprintMatchServer(cleanRefined, fingerprint) : 100
+                if (newMatch >= (styleMatch || 0)) {
+                  currentDraft = cleanRefined
+                  styleMatch = newMatch
+                  tweetOverrides.push('iterative-refined')
                 }
               }
-            }
           }
         } catch { /* iterative refinement optional */ }
       }
@@ -768,6 +722,6 @@ Write NOTHING else — only monologue and tweets.`
     })
   } catch (error) {
     console.error('Generate tweet error:', error)
-    return res.status(500).json({ error: 'Failed to generate tweet', detail: error.message })
+    return handleGeminiError(error, res)
   }
 }

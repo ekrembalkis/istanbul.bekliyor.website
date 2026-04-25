@@ -1,8 +1,7 @@
-// In production: calls go through /api/xquik proxy (avoids CORS)
-// In dev: calls go directly to xquik.com with API key
-const IS_DEV = import.meta.env.DEV
-const DIRECT_URL = 'https://xquik.com/api/v1'
-const API_KEY = import.meta.env.VITE_XQUIK_API_KEY?.trim() || ''
+// All XQuik calls route through the Vercel serverless proxy at /api/xquik so the
+// API key stays server-side. The dev branch that read VITE_XQUIK_API_KEY was
+// dropped — VITE_* vars ship to the client bundle and any router exposing this
+// module would have leaked the key.
 
 export interface StyleProfile {
   xUsername: string
@@ -39,22 +38,10 @@ export interface ComposeRefineResult {
 async function api<T = unknown>(path: string, options?: { method?: string; body?: unknown }): Promise<T> {
   const method = options?.method || 'GET'
 
-  let url: string
-  let headers: Record<string, string>
-
-  if (IS_DEV) {
-    // Dev: direct call with API key
-    url = `${DIRECT_URL}${path}`
-    headers = { 'Content-Type': 'application/json', 'x-api-key': API_KEY }
-  } else {
-    // Production: go through Vercel serverless proxy
-    url = `/api/xquik?path=${encodeURIComponent(path)}`
-    headers = { 'Content-Type': 'application/json' }
-  }
-
+  const url = `/api/xquik?path=${encodeURIComponent(path)}`
   const res = await fetch(url, {
     method,
-    headers,
+    headers: { 'Content-Type': 'application/json' },
     body: options?.body ? JSON.stringify(options.body) : undefined,
   })
 
@@ -700,7 +687,8 @@ export function proxyImageUrl(url: string | undefined): string {
   if (!url || typeof url !== 'string') return ''
   // Upgrade to higher resolution
   const upgraded = url.replace('_normal', '_200x200')
-  if (IS_DEV) return upgraded
+  // Always proxy — direct twimg.com fetches break under Brave/Firefox tracking protection
+  // and the proxy is cheap. (Dev branch removed alongside the VITE_XQUIK_API_KEY leak.)
   return `/api/image-proxy?url=${encodeURIComponent(upgraded)}`
 }
 
@@ -732,8 +720,7 @@ export function deleteDraft(id: string) {
   localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts))
 }
 
-/** Check if API is ready (dev: needs key, prod: proxy handles it) */
+/** Check if API is ready — always true: server-side proxy handles auth in every env. */
 export function hasApiKey(): boolean {
-  if (IS_DEV) return !!API_KEY && API_KEY.startsWith('xq_')
-  return true // Production uses serverless proxy with server-side key
+  return true
 }

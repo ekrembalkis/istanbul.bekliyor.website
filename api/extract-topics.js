@@ -1,16 +1,24 @@
 // Serverless topic extractor: X Tweet Search → Gemini summarization
 // GET /api/extract-topics
 
+import { geminiGenerate, sanitizePromptInput, handleGeminiError } from './_lib/gemini.js'
+
+const TITLES_SCHEMA = {
+  type: 'array',
+  items: { type: 'string' },
+  minItems: 0,
+  maxItems: 5,
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
 
-  const GEMINI_KEY = (process.env.GEMINI_API_KEY || '').trim()
   const XQUIK_KEY = process.env.XQUIK_API_KEY
-  if (!GEMINI_KEY || !XQUIK_KEY) {
-    return res.status(500).json({ error: 'API keys not configured' })
+  if (!XQUIK_KEY) {
+    return res.status(500).json({ error: 'XQUIK_API_KEY not configured' })
   }
 
   const { category = '' } = req.query || {}
@@ -76,23 +84,27 @@ export default async function handler(req, res) {
       })
       .join('\n')
 
-    const combined = [radarTitles, tweetTexts].filter(Boolean).join('\n\n')
-
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `Asagidaki gundem verilerinden 5 KISA KONU BASLIGI cikar. Her baslik 3-6 kelime, Turkce olmali. Kategori: ${category || 'siyaset'}. Sadece JSON string array dondur.\n\n${combined}\n\nJSON array:` }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 200 },
-        }),
-      }
+    const combined = sanitizePromptInput(
+      [radarTitles, tweetTexts].filter(Boolean).join('\n\n'),
+      { maxLen: 4000 },
     )
+    const safeCategory = sanitizePromptInput(category || 'siyaset', { maxLen: 40 })
 
-    if (!geminiRes.ok) {
-      // Fallback: use radar titles directly
-      const topics = radarItems.slice(0, 5).map(r => ({
+    let titles = []
+    let geminiUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0, calls: 0 }
+    try {
+      const result = await geminiGenerate({
+        prompt: `Asagidaki gundem verilerinden 5 KISA KONU BASLIGI cikar. Her baslik 3-6 kelime, Turkce olmali. Kategori: ${safeCategory}.\n\n${combined}`,
+        systemInstruction:
+          'You return concise Turkish topic headlines as a JSON array of 3–6-word strings.',
+        responseJsonSchema: TITLES_SCHEMA,
+        generationConfigOverrides: { maxOutputTokens: 200 },
+      })
+      titles = Array.isArray(result.json) ? result.json : []
+      geminiUsage = { ...result.usage, calls: 1 }
+    } catch (err) {
+      console.warn('extract-topics: Gemini failed, falling back to radar titles', err.message)
+      const fallbackTopics = radarItems.slice(0, 5).map(r => ({
         title: r.title,
         source: 'live',
         relevance: Math.min(95, 60 + (r.score || 0)),
@@ -100,21 +112,8 @@ export default async function handler(req, res) {
         context: '',
         tweets: [],
       }))
-      return res.status(200).json({ topics, category: category || 'siyaset' })
+      return res.status(200).json({ topics: fallbackTopics, category: safeCategory, geminiError: err.message })
     }
-
-    const geminiData = await geminiRes.json()
-    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '[]'
-    const geminiUsage = {
-      promptTokens: geminiData.usageMetadata?.promptTokenCount || 0,
-      completionTokens: geminiData.usageMetadata?.candidatesTokenCount || 0,
-      totalTokens: geminiData.usageMetadata?.totalTokenCount || 0,
-      calls: 1,
-    }
-
-    const jsonMatch = rawText.match(/\[[\s\S]*\]/)
-    let titles = []
-    try { titles = JSON.parse(jsonMatch?.[0] || '[]') } catch { titles = [] }
 
     // 4. Build topics with tweet context
     const topics = titles.slice(0, 5).map((title) => {

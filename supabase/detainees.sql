@@ -19,10 +19,15 @@ CREATE TABLE IF NOT EXISTS detainees (
 CREATE INDEX IF NOT EXISTS detainees_order_idx ON detainees (display_order, arrest_date);
 CREATE INDEX IF NOT EXISTS detainees_featured_idx ON detainees (is_featured) WHERE is_featured = true;
 
--- Public read RLS
+-- RLS: read public (with 30-day fade after release), write authenticated only.
 ALTER TABLE detainees ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "detainees_public_read" ON detainees;
-CREATE POLICY "detainees_public_read" ON detainees FOR SELECT USING (release_date IS NULL OR release_date > CURRENT_DATE - INTERVAL '30 days');
+DROP POLICY IF EXISTS "detainees_authenticated_write" ON detainees;
+CREATE POLICY "detainees_public_read"
+  ON detainees FOR SELECT
+  USING (release_date IS NULL OR release_date > CURRENT_DATE - INTERVAL '30 days');
+CREATE POLICY "detainees_authenticated_write"
+  ON detainees FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Computed view: day_count from arrest_date
 CREATE OR REPLACE VIEW detainees_with_days AS

@@ -1,6 +1,8 @@
 // Serverless style summary generator — distills tweets into a comprehensive style guide
 // POST /api/generate-style-summary { tweets: string[], username: string, language?: string }
 
+import { geminiGenerate, sanitizePromptInput, handleGeminiError } from './_lib/gemini.js'
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -11,14 +13,19 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const GEMINI_KEY = (process.env.GEMINI_API_KEY || '').trim()
-  if (!GEMINI_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' })
-
-  const { tweets = [], username = '', language = '' } = req.body
-  if (tweets.length < 5) return res.status(400).json({ error: 'Need at least 5 tweets' })
+  const { tweets = [], username = '', language = '' } = req.body || {}
+  if (!Array.isArray(tweets) || tweets.length < 5) {
+    return res.status(400).json({ error: 'Need at least 5 tweets' })
+  }
 
   const slicedTweets = tweets.slice(0, 100)
-  const numbered = slicedTweets.map((t, i) => `${i + 1}. ${t.replace(/https?:\/\/\S+/g, '').trim()}`).join('\n')
+  const numbered = slicedTweets
+    .map((t, i) => {
+      const cleaned = sanitizePromptInput(String(t).replace(/https?:\/\/\S+/g, '').trim(), { maxLen: 600 })
+      return `${i + 1}. ${cleaned}`
+    })
+    .join('\n')
+  const safeUsername = sanitizePromptInput(username, { maxLen: 64 })
 
   const lang = language || 'tr'
   const langInstruction = lang === 'tr'
@@ -26,7 +33,7 @@ export default async function handler(req, res) {
     : `Write in ${lang.toUpperCase()}. Use actual tweet quotes as examples.`
 
   try {
-    const prompt = `Analyze these ${slicedTweets.length} tweets from @${username} and create a comprehensive STYLE SUMMARY that captures how this person writes.
+    const prompt = `Analyze these ${slicedTweets.length} tweets from @${safeUsername} and create a comprehensive STYLE SUMMARY that captures how this person writes.
 
 TWEETS:
 ${numbered}
@@ -50,39 +57,24 @@ ${langInstruction}
 Somut, spesifik, uygulanabilir yaz. Her madde icin tweetlerden gercek ornekler ver.
 500-800 kelime arasi saf stil kilavuzu metni dondur. JSON degil, markdown degil, duz metin.`
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1200 },
-        }),
-      }
-    )
-
-    if (!geminiRes.ok) {
-      const err = await geminiRes.json().catch(() => ({}))
-      return res.status(500).json({ error: 'Gemini error', detail: err.error?.message })
-    }
-
-    const geminiData = await geminiRes.json()
-    const summary = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    const { text: summary, usage } = await geminiGenerate({
+      prompt,
+      systemInstruction:
+        'You distill writing style into actionable plain-text style guides; never reply with JSON or markdown.',
+      generationConfigOverrides: { maxOutputTokens: 1200 },
+    })
 
     if (!summary || summary.length < 100) {
-      return res.status(500).json({ error: 'Style summary generation failed', raw: summary.substring(0, 200) })
+      return res.status(502).json({ error: 'Style summary generation failed (too short)' })
     }
 
-    const geminiUsage = {
-      promptTokens: geminiData.usageMetadata?.promptTokenCount || 0,
-      completionTokens: geminiData.usageMetadata?.candidatesTokenCount || 0,
-      totalTokens: geminiData.usageMetadata?.totalTokenCount || 0,
-      calls: 1,
-    }
-
-    return res.status(200).json({ summary, geminiUsage, tweetCount: slicedTweets.length })
+    return res.status(200).json({
+      summary,
+      geminiUsage: { ...usage, calls: 1 },
+      tweetCount: slicedTweets.length,
+    })
   } catch (error) {
-    return res.status(500).json({ error: error.message })
+    console.error('generate-style-summary error:', error)
+    return handleGeminiError(error, res)
   }
 }

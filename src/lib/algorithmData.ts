@@ -66,25 +66,11 @@ export async function fetchAlgorithmData(): Promise<AlgorithmData | null> {
   const cached = getCached()
   if (cached) return cached
 
-  // 2. Fetch from API
+  // 2. Fetch via the Vercel proxy — the XQuik key stays server-side.
   try {
-    const IS_DEV = import.meta.env.DEV
-    const API_KEY = import.meta.env.VITE_XQUIK_API_KEY?.trim() || ''
-
-    let url: string
-    let headers: Record<string, string>
-
-    if (IS_DEV) {
-      url = 'https://xquik.com/api/v1/compose'
-      headers = { 'Content-Type': 'application/json', 'x-api-key': API_KEY }
-    } else {
-      url = `/api/xquik?path=${encodeURIComponent('/compose')}`
-      headers = { 'Content-Type': 'application/json' }
-    }
-
-    const res = await fetch(url, {
+    const res = await fetch(`/api/xquik?path=${encodeURIComponent('/compose')}`, {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ step: 'compose', topic: 'algorithm data fetch' }),
     })
 

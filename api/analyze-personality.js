@@ -1,19 +1,103 @@
 // Serverless personality DNA analyzer — Hybrid approach (full DNA + topic profiles)
 // POST /api/analyze-personality { tweets: string[] }
 
+import { geminiGenerate, sanitizePromptInput, handleGeminiError } from './_lib/gemini.js'
+
+const DNA_SCHEMA = {
+  type: 'object',
+  properties: {
+    language: { type: 'string' },
+    identity: {
+      type: 'object',
+      properties: {
+        archetype: { type: 'string' },
+        worldview: { type: 'string' },
+        expertise: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['archetype', 'worldview', 'expertise'],
+    },
+    voice: {
+      type: 'object',
+      properties: {
+        toneSpectrum: { type: 'string' },
+        openingStyle: { type: 'string' },
+        closingStyle: { type: 'string' },
+        signaturePhrases: { type: 'array', items: { type: 'string' } },
+        humorStyle: { type: 'string' },
+      },
+    },
+    reactions: {
+      type: 'object',
+      properties: {
+        toGoodNews: { type: 'string' },
+        toBadNews: { type: 'string' },
+        toControversy: { type: 'string' },
+      },
+    },
+    boundaries: {
+      type: 'object',
+      properties: {
+        neverDoes: { type: 'array', items: { type: 'string' } },
+        alwaysDoes: { type: 'array', items: { type: 'string' } },
+      },
+    },
+    personalityTraits: {
+      type: 'object',
+      properties: {
+        formality: { type: 'integer', minimum: 0, maximum: 100 },
+        humor: { type: 'integer', minimum: 0, maximum: 100 },
+        controversy: { type: 'integer', minimum: 0, maximum: 100 },
+        empathy: { type: 'integer', minimum: 0, maximum: 100 },
+        authenticity: { type: 'integer', minimum: 0, maximum: 100 },
+      },
+    },
+    topicProfiles: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          topic: { type: 'string' },
+          tone: { type: 'string' },
+          behavior: { type: 'string' },
+          typicalReaction: { type: 'string' },
+        },
+      },
+    },
+    slangPatterns: { type: 'array', items: { type: 'string' } },
+    cognitiveFilters: { type: 'array', items: { type: 'string' } },
+    narrativeTechniques: { type: 'array', items: { type: 'string' } },
+    ironyTechniques: { type: 'array', items: { type: 'string' } },
+    ironyExamples: { type: 'array', items: { type: 'string' } },
+    contextualBehavior: {
+      type: 'object',
+      properties: {
+        whenHappy: { type: 'string' },
+        whenAngry: { type: 'string' },
+        whenBored: { type: 'string' },
+      },
+    },
+  },
+  required: ['identity'],
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
 
-  const GEMINI_KEY = (process.env.GEMINI_API_KEY || '').trim()
-  if (!GEMINI_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' })
+  const { tweets = [] } = req.body || {}
+  if (!Array.isArray(tweets) || tweets.length < 5) {
+    return res.status(400).json({ error: 'Need at least 5 tweets' })
+  }
 
-  const { tweets = [] } = req.body
-  if (tweets.length < 5) return res.status(400).json({ error: 'Need at least 5 tweets' })
-
-  const numberedTweets = tweets.slice(0, 100).map((t, i) => `${i + 1}. ${t.replace(/https?:\/\/\S+/g, '').trim()}`).join('\n')
+  const numberedTweets = tweets
+    .slice(0, 100)
+    .map((t, i) => {
+      const cleaned = sanitizePromptInput(String(t).replace(/https?:\/\/\S+/g, '').trim(), { maxLen: 600 })
+      return `${i + 1}. ${cleaned}`
+    })
+    .join('\n')
 
   try {
     const prompt = `These ${tweets.length} tweets belong to the same person. Extract their personality DNA and topic-based behavior profiles.
@@ -84,51 +168,27 @@ Fill in the JSON structure below completely. IMPORTANT: Write ALL values in the 
 
 Return ONLY JSON, no explanation.`
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 3000 },
-        }),
-      }
-    )
-
-    if (!geminiRes.ok) {
-      const err = await geminiRes.json().catch(() => ({}))
-      return res.status(500).json({ error: 'Gemini error', detail: err.error?.message })
-    }
-
-    const geminiData = await geminiRes.json()
-    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
-
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/)
-    let dna = null
-    try {
-      dna = JSON.parse(jsonMatch?.[0] || '{}')
-    } catch {
-      dna = null
-    }
+    const { json: dna, usage } = await geminiGenerate({
+      prompt,
+      systemInstruction: 'You are a personality DNA analyst. Always reply with valid JSON matching the supplied schema.',
+      responseJsonSchema: DNA_SCHEMA,
+      generationConfigOverrides: { maxOutputTokens: 3000 },
+    })
 
     if (!dna || !dna.identity) {
-      return res.status(500).json({ error: 'DNA extraction failed', raw: rawText.substring(0, 200) })
+      return res.status(502).json({ error: 'DNA extraction failed (schema mismatch)' })
     }
 
-    // Add metadata
     dna.version = 2
     dna.analyzedTweetCount = tweets.slice(0, 100).length
 
-    const geminiUsage = {
-      promptTokens: geminiData.usageMetadata?.promptTokenCount || 0,
-      completionTokens: geminiData.usageMetadata?.candidatesTokenCount || 0,
-      totalTokens: geminiData.usageMetadata?.totalTokenCount || 0,
-      calls: 1,
-    }
-
-    return res.status(200).json({ dna, geminiUsage, tweetCount: tweets.length })
+    return res.status(200).json({
+      dna,
+      geminiUsage: { ...usage, calls: 1 },
+      tweetCount: tweets.length,
+    })
   } catch (error) {
-    return res.status(500).json({ error: error.message })
+    console.error('analyze-personality error:', error)
+    return handleGeminiError(error, res)
   }
 }

@@ -25,6 +25,7 @@ export default function Dashboard() {
 
   const [shadowResult, setShadowResult] = useState<ShadowBanRecord | null>(() => getLatestCheck('istbekliyor'))
   const [shadowLoading, setShadowLoading] = useState(false)
+  const [shadowError, setShadowError] = useState<string | null>(null)
 
   const displayName = `İSTANBUL BEKLİYOR · GÜN ${day}`
   const bio = `İstanbul ${day} gündür seçilmiş başkanını bekliyor. Her gün bir görsel. Her görsel bir ses. ⏳`
@@ -306,11 +307,16 @@ export default function Dashboard() {
                 <button
                   onClick={async () => {
                     setShadowLoading(true)
+                    setShadowError(null)
                     try {
                       const res = await runQuickCheck('istbekliyor')
                       setShadowResult(res)
-                    } catch { /* silent */ }
-                    setShadowLoading(false)
+                    } catch (err) {
+                      console.error('Dashboard: runQuickCheck failed', err)
+                      setShadowError(err instanceof Error ? err.message : 'Kontrol başarısız')
+                    } finally {
+                      setShadowLoading(false)
+                    }
                   }}
                   disabled={shadowLoading}
                   className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 hover:text-brand-red transition-colors disabled:opacity-40"
@@ -322,24 +328,41 @@ export default function Dashboard() {
                 </Link>
               </div>
             </div>
+            {shadowError && (
+              <div role="alert" className="mt-2 text-[10px] text-red-500">
+                ⚠ {shadowError}
+              </div>
+            )}
           </div>
         ) : (
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400">Henuz kontrol yapilmadi</span>
-            <button
-              onClick={async () => {
-                setShadowLoading(true)
-                try {
-                  const res = await runQuickCheck('istbekliyor')
-                  setShadowResult(res)
-                } catch { /* silent */ }
-                setShadowLoading(false)
-              }}
-              disabled={shadowLoading}
-              className="text-xs font-semibold text-brand-red hover:text-brand-red-dark transition-colors disabled:opacity-40"
-            >
-              {shadowLoading ? 'Kontrol...' : 'Simdi Kontrol Et'}
-            </button>
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-400">Henuz kontrol yapilmadi</span>
+              <button
+                onClick={async () => {
+                  setShadowLoading(true)
+                  setShadowError(null)
+                  try {
+                    const res = await runQuickCheck('istbekliyor')
+                    setShadowResult(res)
+                  } catch (err) {
+                    console.error('Dashboard: runQuickCheck failed', err)
+                    setShadowError(err instanceof Error ? err.message : 'Kontrol başarısız')
+                  } finally {
+                    setShadowLoading(false)
+                  }
+                }}
+                disabled={shadowLoading}
+                className="text-xs font-semibold text-brand-red hover:text-brand-red-dark transition-colors disabled:opacity-40"
+              >
+                {shadowLoading ? 'Kontrol...' : 'Simdi Kontrol Et'}
+              </button>
+            </div>
+            {shadowError && (
+              <div role="alert" className="mt-2 text-xs text-red-500">
+                ⚠ {shadowError}
+              </div>
+            )}
           </div>
         )}
       </section>

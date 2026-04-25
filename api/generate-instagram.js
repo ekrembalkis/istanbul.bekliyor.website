@@ -2,51 +2,17 @@
 // POST /api/generate-instagram { title, description, url, source, category }
 // Returns: { imageText, captionHook, captionBody }
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
-const GEMINI_BASE_URL = process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/models'
+import { geminiGenerate, sanitizePromptInput, handleGeminiError } from './_lib/gemini.js'
 
-// Robust JSON parser: handles markdown wrappers, unescaped newlines in string values
-function safeParseJSON(text) {
-  // Strip markdown code fences if present
-  let clean = text.trim()
-  if (clean.startsWith('```')) {
-    clean = clean.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
-  }
-
-  // Attempt 1: direct parse
-  try { return JSON.parse(clean) } catch {}
-
-  // Attempt 2: escape unescaped control chars ONLY inside JSON string values
-  // Walk character by character, only transform when inside a quoted string
-  let fixed = ''
-  let inString = false
-  let escaped = false
-  for (let i = 0; i < clean.length; i++) {
-    const ch = clean[i]
-    if (escaped) {
-      fixed += ch
-      escaped = false
-      continue
-    }
-    if (ch === '\\' && inString) {
-      fixed += ch
-      escaped = true
-      continue
-    }
-    if (ch === '"') {
-      inString = !inString
-      fixed += ch
-      continue
-    }
-    if (inString && ch === '\n') { fixed += '\\n'; continue }
-    if (inString && ch === '\r') { fixed += '\\r'; continue }
-    if (inString && ch === '\t') { fixed += '\\t'; continue }
-    fixed += ch
-  }
-
-  try { return JSON.parse(fixed) } catch {}
-
-  throw new Error('Failed to parse Gemini JSON response')
+const INSTAGRAM_SCHEMA = {
+  type: 'object',
+  properties: {
+    imageText: { type: 'string' },
+    captionHook: { type: 'string' },
+    captionBody: { type: 'string' },
+    imageSearchQuery: { type: 'string' },
+  },
+  required: ['imageText', 'captionHook', 'captionBody'],
 }
 
 export default async function handler(req, res) {
@@ -54,16 +20,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'POST only' })
   }
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY not configured' })
-  }
+  const { title: rawTitle, description: rawDesc, source: rawSource } = req.body || {}
 
-  const { title, description, url, source } = req.body
-
-  if (!title) {
+  if (!rawTitle) {
     return res.status(400).json({ error: 'title is required' })
   }
+
+  // RSS-derived input — sanitize before interpolating into the prompt.
+  const title = sanitizePromptInput(rawTitle, { maxLen: 300 })
+  const description = sanitizePromptInput(rawDesc || 'Detay yok', { maxLen: 2000 })
+  const source = sanitizePromptInput(rawSource || 'Bilinmiyor', { maxLen: 100 })
 
   const systemPrompt = `Sen İstanbul Bekliyor (@istbekliyor) kampanyasının Instagram içerik editörüsün.
 
@@ -124,48 +90,19 @@ OUTPUT 4 — imageSearchQuery:
 
   const userPrompt = `HABER:
 Başlık: ${title}
-Detay: ${description || 'Detay yok'}
-Kaynak: ${source || 'Bilinmiyor'}
+Detay: ${description}
+Kaynak: ${source}
 
-Bu haberden Instagram içeriği üret. Tek bir JSON objesi dön: {"imageText":"...","captionHook":"...","captionBody":"...","imageSearchQuery":"..."}`
+Bu haberden Instagram içeriği üret. Tek bir JSON objesi dön (DİZİ DEĞİL): {"imageText":"...","captionHook":"...","captionBody":"...","imageSearchQuery":"..."}`
 
   try {
-    const geminiUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${apiKey}`
-
-    const response = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          { role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          responseMimeType: 'application/json',
-        },
-      }),
+    const { json: result } = await geminiGenerate({
+      systemInstruction: systemPrompt,
+      prompt: userPrompt,
+      responseJsonSchema: INSTAGRAM_SCHEMA,
+      generationConfigOverrides: { maxOutputTokens: 2500 },
     })
 
-    if (!response.ok) {
-      const errText = await response.text()
-      return res.status(502).json({ error: `Gemini API error: ${response.status}` })
-    }
-
-    const data = await response.json()
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text
-
-    if (!rawText) {
-      return res.status(502).json({ error: 'Empty Gemini response' })
-    }
-
-    let result = safeParseJSON(rawText)
-
-    // If Gemini returned an array, take the first item
-    if (Array.isArray(result)) {
-      result = result[0]
-    }
-
-    // Validate required fields
     if (!result || !result.imageText || !result.captionHook || !result.captionBody) {
       return res.status(502).json({ error: 'Incomplete Gemini response', raw: result })
     }
@@ -177,6 +114,7 @@ Bu haberden Instagram içeriği üret. Tek bir JSON objesi dön: {"imageText":".
       imageSearchQuery: result.imageSearchQuery || '',
     })
   } catch (err) {
-    return res.status(500).json({ error: err.message || 'Unknown error' })
+    console.error('generate-instagram error:', err)
+    return handleGeminiError(err, res)
   }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
+import { daysSinceArrest } from './utils'
 
 export type Detainee = {
   id: string
@@ -14,8 +15,6 @@ export type Detainee = {
   notes: string | null
   day_count: number
 }
-
-const ISTANBUL_TZ_SUFFIX = '+03:00' // Türkiye sabit UTC+3 (DST yok). lib/utils.ts ile aynı.
 
 const FALLBACK: Detainee[] = [
   {
@@ -48,13 +47,12 @@ function isValidRow(row: unknown): row is DetaineeRow {
 }
 
 function withComputedDays(rows: DetaineeRow[]): Detainee[] {
-  const now = Date.now()
-  return rows.map(r => {
-    // Istanbul TZ'ye sabitle — kullanıcının yerel TZ'sinden bağımsız tutarlı sayım.
-    const start = new Date(`${r.arrest_date}T00:00:00${ISTANBUL_TZ_SUFFIX}`).getTime()
-    const days = Math.max(0, Math.floor((now - start) / 86_400_000))
-    return { ...r, day_count: days }
-  })
+  const now = new Date()
+  return rows.map(r => ({
+    ...r,
+    // Tek kaynak: lib/utils.ts daysSinceArrest. Istanbul TZ + 1-indexed.
+    day_count: daysSinceArrest(r.arrest_date, now),
+  }))
 }
 
 export function useDetainees() {

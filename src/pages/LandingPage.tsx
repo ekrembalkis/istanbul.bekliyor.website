@@ -148,7 +148,7 @@ function HeroSection({ day }: { day: number }) {
 }
 
 function DetaineesSection() {
-  const { data } = useDetainees()
+  const { data, error } = useDetainees()
   const detainees = data ?? []
   const featured = detainees.find(d => d.is_featured) ?? detainees[0]
   const others = detainees.filter(d => d.id !== featured?.id)
@@ -161,6 +161,15 @@ function DetaineesSection() {
           <span className="col-span-12 sm:col-span-4 sm:text-center">N° {String(detainees.length).padStart(2, '0')} kişi</span>
           <span className="col-span-12 sm:col-span-4 sm:text-right">Roster · {ROMAN_YEAR}</span>
         </div>
+
+        {error && (
+          <div
+            role="status"
+            className="mt-6 editorial-mono text-ink-muted border-l-2 border-accent pl-4 py-2"
+          >
+            — Veri kaynağı geçici olarak ulaşılmıyor. Aşağıdaki kayıt yerel yedektir. —
+          </div>
+        )}
 
         <h2
           className="editorial-h1 text-ink mt-10"

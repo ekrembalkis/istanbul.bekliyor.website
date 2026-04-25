@@ -1,5 +1,7 @@
-// Serverless NBP prompt generator: Gemini 2.0 Flash + Campaign Visual DNA
+// Serverless NBP prompt generator using the centralized Gemini helper.
 // POST /api/generate-prompt { theme, scene, goldenElement, dayNumber, mode, existingPrompt?, topicContext? }
+
+import { geminiGenerate, sanitizePromptInput, handleGeminiError } from './_lib/gemini.js'
 
 const SYSTEM_PROMPT = `Sen bir Nano Banana Pro gorsel prompt muhendisisin. Istanbul Bekliyor kampanyasi icin gunluk gorsel promptlari yaziyorsun.
 
@@ -46,33 +48,40 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const GEMINI_KEY = (process.env.GEMINI_API_KEY || '').trim()
-  if (!GEMINI_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' })
-
   const {
-    theme, scene, goldenElement, dayNumber,
+    theme: rawTheme,
+    scene: rawScene,
+    goldenElement: rawGolden,
+    dayNumber,
     mode = 'generate',
-    existingPrompt = '',
-    topicContext = '',
-  } = req.body
+    existingPrompt: rawExisting = '',
+    topicContext: rawTopic = '',
+  } = req.body || {}
 
-  if (!theme || !scene || !goldenElement || !dayNumber) {
+  if (!rawTheme || !rawScene || !rawGolden || !dayNumber) {
     return res.status(400).json({ error: 'theme, scene, goldenElement, and dayNumber are required' })
   }
 
+  // Length-cap + escape every user-supplied string.
+  const theme = sanitizePromptInput(rawTheme, { maxLen: 200 })
+  const scene = sanitizePromptInput(rawScene, { maxLen: 800 })
+  const goldenElement = sanitizePromptInput(rawGolden, { maxLen: 200 })
+  const existingPrompt = sanitizePromptInput(rawExisting, { maxLen: 1500 })
+  const topicContext = sanitizePromptInput(rawTopic, { maxLen: 1500 })
+  const dayNum = Number.isFinite(Number(dayNumber)) ? Number(dayNumber) : 0
+
   try {
-    // Build user prompt based on mode
     let userPrompt
     if (mode === 'refine') {
       userPrompt = `Asagidaki mevcut Nano Banana Pro prompt'u iyilestir. Ayni temayi ve altin elemani koru ama sahne kompozisyonunu, isik yonlendirmesini ve atmosferi daha etkileyici ve sinematik yap.
 
 Mevcut prompt:
-"${existingPrompt}"
+${existingPrompt}
 
 Tema: ${theme}
 Sahne: ${scene}
 Altin eleman: ${goldenElement}
-Gun numarasi: ${dayNumber}
+Gun numarasi: ${dayNum}
 ${topicContext ? `\nGundem baglami: ${topicContext}\n` : ''}
 Iyilestirilmis prompt'u yaz. Sadece Ingilizce prompt metnini dondur, baska hicbir sey yazma.`
     } else {
@@ -81,42 +90,19 @@ Iyilestirilmis prompt'u yaz. Sadece Ingilizce prompt metnini dondur, baska hicbi
 Tema: ${theme}
 Sahne: ${scene}
 Altin eleman: ${goldenElement}
-Gun numarasi: ${dayNumber}
+Gun numarasi: ${dayNum}
 ${topicContext ? `\nGundem baglami: ${topicContext}\n` : ''}
 Sadece Ingilizce prompt metnini dondur, baska hicbir sey yazma.`
     }
 
-    // Call Gemini 2.0 Flash
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: SYSTEM_PROMPT + '\n\n' + userPrompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 600 },
-        }),
-      }
-    )
+    const { text, usage } = await geminiGenerate({
+      prompt: userPrompt,
+      systemInstruction: SYSTEM_PROMPT,
+      generationConfigOverrides: { maxOutputTokens: 600 },
+    })
 
-    if (!geminiRes.ok) {
-      const err = await geminiRes.json().catch(() => ({}))
-      return res.status(500).json({ error: 'Gemini API error', detail: err.error?.message })
-    }
-
-    const geminiData = await geminiRes.json()
-    let prompt = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
-
-    // Track usage
-    const geminiUsage = {
-      promptTokens: geminiData.usageMetadata?.promptTokenCount || 0,
-      completionTokens: geminiData.usageMetadata?.candidatesTokenCount || 0,
-      totalTokens: geminiData.usageMetadata?.totalTokenCount || 0,
-      calls: 1,
-    }
-
-    // Clean up response
-    prompt = prompt
+    const geminiUsage = { ...usage, calls: 1 }
+    let prompt = text
       .replace(/```[\s\S]*?```/g, '')  // Remove code blocks
       .replace(/^["']|["']$/g, '')      // Remove wrapping quotes
       .replace(/^\s*prompt:\s*/i, '')    // Remove "prompt:" prefix
@@ -131,7 +117,7 @@ Sadece Ingilizce prompt metnini dondur, baska hicbir sey yazma.`
       prompt += ' The golden element glows with warm amber color (#D4A843).'
     }
     if (!/GUN|GÜN/i.test(prompt)) {
-      prompt += ` Bold clean text reading "GUN ${dayNumber}" in large uppercase sans-serif font at the top of the frame.`
+      prompt += ` Bold clean text reading "GUN ${dayNum}" in large uppercase sans-serif font at the top of the frame.`
     }
     if (!prompt.includes('1:1')) {
       prompt += ' 1:1 aspect ratio at 2K resolution.'
@@ -146,11 +132,11 @@ Sadece Ingilizce prompt metnini dondur, baska hicbir sey yazma.`
       prompt,
       mode,
       theme,
-      dayNumber,
+      dayNumber: dayNum,
       geminiUsage,
     })
   } catch (error) {
     console.error('Generate prompt error:', error)
-    return res.status(500).json({ error: 'Failed to generate prompt', detail: error.message })
+    return handleGeminiError(error, res)
   }
 }

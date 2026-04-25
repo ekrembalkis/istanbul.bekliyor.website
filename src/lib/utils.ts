@@ -6,11 +6,27 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 const ARREST_DATE = new Date('2025-03-19T00:00:00+03:00');
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
+/**
+ * Days since an arrest date, 1-indexed (the arrest day itself is day 1).
+ * Single source of truth — used by Hero counter AND DetaineeRow so a roster
+ * row never shows N-1 while the masthead shows N for the same person.
+ *
+ * @param arrestDate ISO string OR Date — defaults to İmamoğlu's arrest.
+ * @param now        Optional override for tests.
+ */
+export function daysSinceArrest(arrestDate: string | Date = ARREST_DATE, now: Date = new Date()): number {
+  const start = typeof arrestDate === 'string'
+    ? new Date(/[Tt]/.test(arrestDate) ? arrestDate : `${arrestDate}T00:00:00+03:00`)
+    : arrestDate;
+  const diff = now.getTime() - start.getTime();
+  return Math.max(1, Math.floor(diff / MS_PER_DAY) + 1);
+}
+
+/** Backwards-compatible alias for the campaign-default arrest date. */
 export function getDayCount(date?: Date): number {
-  const target = date || new Date();
-  const diff = target.getTime() - ARREST_DATE.getTime();
-  return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+  return daysSinceArrest(ARREST_DATE, date ?? new Date());
 }
 
 export function getDateForDay(dayNumber: number): Date {
