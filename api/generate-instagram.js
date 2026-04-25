@@ -3,6 +3,7 @@
 // Returns: { imageText, captionHook, captionBody }
 
 import { geminiGenerate, sanitizePromptInput, handleGeminiError } from './_lib/gemini.js'
+import { rateLimit } from './_lib/rateLimit.js'
 
 const INSTAGRAM_SCHEMA = {
   type: 'object',
@@ -19,6 +20,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'POST only' })
   }
+  if (!rateLimit(req, res, { scope: 'gen-instagram', limit: 30 })) return
 
   const { title: rawTitle, description: rawDesc, source: rawSource } = req.body || {}
 

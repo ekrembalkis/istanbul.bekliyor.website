@@ -1,7 +1,8 @@
 // Serverless topic extractor: X Tweet Search → Gemini summarization
 // GET /api/extract-topics
 
-import { geminiGenerate, sanitizePromptInput, handleGeminiError } from './_lib/gemini.js'
+import { geminiGenerate, sanitizePromptInput } from './_lib/gemini.js'
+import { rateLimit } from './_lib/rateLimit.js'
 
 const TITLES_SCHEMA = {
   type: 'array',
@@ -15,6 +16,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
+  if (!rateLimit(req, res, { scope: 'extract-topics', limit: 30 })) return
 
   const XQUIK_KEY = process.env.XQUIK_API_KEY
   if (!XQUIK_KEY) {

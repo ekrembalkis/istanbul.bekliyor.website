@@ -2,6 +2,7 @@
 // POST /api/generate-tweet { styleUsername, topic, tone, goal, count, cloneMode }
 
 import { geminiGenerate, sanitizePromptInput, handleGeminiError } from './_lib/gemini.js'
+import { rateLimit } from './_lib/rateLimit.js'
 
 // ── Language detection heuristic (fallback when DNA has no language) ──
 function detectLanguage(tweets) {
@@ -246,6 +247,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+  if (!rateLimit(req, res, { scope: 'gen-tweet', limit: 20 })) return
 
   const XQUIK_KEY = (process.env.XQUIK_API_KEY || '').trim()
   if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' })

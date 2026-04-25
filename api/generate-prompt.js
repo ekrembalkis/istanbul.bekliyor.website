@@ -2,6 +2,7 @@
 // POST /api/generate-prompt { theme, scene, goldenElement, dayNumber, mode, existingPrompt?, topicContext? }
 
 import { geminiGenerate, sanitizePromptInput, handleGeminiError } from './_lib/gemini.js'
+import { rateLimit } from './_lib/rateLimit.js'
 
 const SYSTEM_PROMPT = `Sen bir Nano Banana Pro gorsel prompt muhendisisin. Istanbul Bekliyor kampanyasi icin gunluk gorsel promptlari yaziyorsun.
 
@@ -47,6 +48,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+  if (!rateLimit(req, res, { scope: 'gen-prompt', limit: 30 })) return
 
   const {
     theme: rawTheme,

@@ -2,6 +2,7 @@
 // POST /api/generate-style-summary { tweets: string[], username: string, language?: string }
 
 import { geminiGenerate, sanitizePromptInput, handleGeminiError } from './_lib/gemini.js'
+import { rateLimit } from './_lib/rateLimit.js'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -12,6 +13,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+  if (!rateLimit(req, res, { scope: 'style-summary', limit: 12 })) return
 
   const { tweets = [], username = '', language = '' } = req.body || {}
   if (!Array.isArray(tweets) || tweets.length < 5) {

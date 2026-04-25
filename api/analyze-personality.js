@@ -2,6 +2,7 @@
 // POST /api/analyze-personality { tweets: string[] }
 
 import { geminiGenerate, sanitizePromptInput, handleGeminiError } from './_lib/gemini.js'
+import { rateLimit } from './_lib/rateLimit.js'
 
 const DNA_SCHEMA = {
   type: 'object',
@@ -85,6 +86,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
+  if (!rateLimit(req, res, { scope: 'analyze-personality', limit: 12 })) return
 
   const { tweets = [] } = req.body || {}
   if (!Array.isArray(tweets) || tweets.length < 5) {

@@ -3,10 +3,11 @@
 
 const STORAGE_KEY = 'ib_cost_tracker'
 
-// Gemini 2.0 Flash pricing (per 1M tokens)
+// Gemini 3 Flash Preview pricing (per 1M tokens) — keep in sync with the
+// model pinned in api/_lib/gemini.js. Source: ai.google.dev pricing page.
 const GEMINI_PRICING = {
-  input: 0.10,   // $0.10 per 1M input tokens
-  output: 0.40,  // $0.40 per 1M output tokens
+  input: 0.30,   // $0.30 per 1M input tokens
+  output: 2.50,  // $2.50 per 1M output tokens
 }
 
 export interface GeminiUsage {
