@@ -28,7 +28,7 @@ function UsageBar({ label, value, max, color }: { label: string; value: number; 
         <span className="text-slate-400">{label}</span>
         <span className="font-mono text-slate-500 dark:text-slate-300">{formatTokens(value)}</span>
       </div>
-      <div className="h-1.5 bg-slate-100 dark:bg-white/[0.06] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-slate-100 dark:bg-white/6 rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.max(2, pct)}%` }} />
       </div>
     </div>
@@ -38,7 +38,7 @@ function UsageBar({ label, value, max, color }: { label: string; value: number; 
 function GeminiCard({ title, usage, period }: { title: string; usage: GeminiUsage; period: string }) {
   const cost = calculateGeminiCost(usage)
   return (
-    <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 border border-slate-100 dark:border-white/[0.06]">
+    <div className="bg-slate-50 dark:bg-white/3 rounded-xl p-4 border border-slate-100 dark:border-white/6">
       <div className="flex items-center justify-between mb-3">
         <div>
           <div className="text-[10px] font-bold text-slate-400 tracking-wider">{title}</div>
@@ -211,7 +211,7 @@ export default function Settings() {
           <div className="space-y-4">
             <div className="text-[10px] font-bold text-slate-400 tracking-wider">XQUIK ABONELİK</div>
             {accountLoading ? (
-              <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-6 border border-slate-100 dark:border-white/[0.06] text-center">
+              <div className="bg-slate-50 dark:bg-white/3 rounded-xl p-6 border border-slate-100 dark:border-white/6 text-center">
                 <div className="text-xs text-slate-400 animate-pulse">Yükleniyor...</div>
               </div>
             ) : accountError ? (
@@ -219,7 +219,7 @@ export default function Settings() {
                 <div className="text-xs text-red-600 dark:text-red-400">{accountError}</div>
               </div>
             ) : account ? (
-              <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 border border-slate-100 dark:border-white/[0.06] space-y-4">
+              <div className="bg-slate-50 dark:bg-white/3 rounded-xl p-4 border border-slate-100 dark:border-white/6 space-y-4">
                 {/* Status + Plan */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -243,7 +243,7 @@ export default function Settings() {
                     <span className="text-[10px] text-slate-400">Dönem Kullanımı</span>
                     <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{usagePct}%</span>
                   </div>
-                  <div className="h-3 bg-slate-200 dark:bg-white/[0.08] rounded-full overflow-hidden">
+                  <div className="h-3 bg-slate-200 dark:bg-white/8 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         usagePct > 80 ? 'bg-red-500' : usagePct > 50 ? 'bg-amber-500' : 'bg-emerald-500'
@@ -259,7 +259,7 @@ export default function Settings() {
 
                 {/* Period + Monitors */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white dark:bg-dark-card rounded-lg p-2.5 border border-slate-100 dark:border-white/[0.06]">
+                  <div className="bg-white dark:bg-dark-card rounded-lg p-2.5 border border-slate-100 dark:border-white/6">
                     <div className="text-[10px] text-slate-400 mb-0.5">Dönem</div>
                     <div className="text-[11px] font-mono text-slate-600 dark:text-slate-300">
                       {period ? new Date(period.start).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : '-'}
@@ -267,17 +267,17 @@ export default function Settings() {
                       {period ? new Date(period.end).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : '-'}
                     </div>
                   </div>
-                  <div className="bg-white dark:bg-dark-card rounded-lg p-2.5 border border-slate-100 dark:border-white/[0.06]">
+                  <div className="bg-white dark:bg-dark-card rounded-lg p-2.5 border border-slate-100 dark:border-white/6">
                     <div className="text-[10px] text-slate-400 mb-0.5">Kalan Gün</div>
                     <div className="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300">{daysLeft} gün</div>
                   </div>
-                  <div className="bg-white dark:bg-dark-card rounded-lg p-2.5 border border-slate-100 dark:border-white/[0.06]">
+                  <div className="bg-white dark:bg-dark-card rounded-lg p-2.5 border border-slate-100 dark:border-white/6">
                     <div className="text-[10px] text-slate-400 mb-0.5">Monitörler</div>
                     <div className="text-[11px] font-mono text-slate-600 dark:text-slate-300">
                       {account.monitorsUsed} / {account.monitorsAllowed}
                     </div>
                   </div>
-                  <div className="bg-white dark:bg-dark-card rounded-lg p-2.5 border border-slate-100 dark:border-white/[0.06]">
+                  <div className="bg-white dark:bg-dark-card rounded-lg p-2.5 border border-slate-100 dark:border-white/6">
                     <div className="text-[10px] text-slate-400 mb-0.5">API Versiyonu</div>
                     <div className="text-[11px] font-mono text-slate-600 dark:text-slate-300">v{account.pricingVersion}</div>
                   </div>
@@ -310,7 +310,7 @@ export default function Settings() {
 
         {/* Daily chart - last 7 days */}
         {costSummary.dailyRecords.length > 1 && (
-          <div className="mt-6 border-t border-slate-100 dark:border-white/[0.06] pt-4">
+          <div className="mt-6 border-t border-slate-100 dark:border-white/6 pt-4">
             <div className="text-[10px] font-bold text-slate-400 tracking-wider mb-3">SON 7 GÜN</div>
             <div className="flex items-end gap-1 h-16">
               {costSummary.dailyRecords.slice(-7).map((r, i) => {
@@ -318,7 +318,7 @@ export default function Settings() {
                 const pct = (r.gemini.totalTokens / maxTokens) * 100
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="w-full bg-blue-100 dark:bg-blue-500/20 rounded-sm" style={{ height: `${Math.max(2, pct)}%` }}
+                    <div className="w-full bg-blue-100 dark:bg-blue-500/20 rounded-xs" style={{ height: `${Math.max(2, pct)}%` }}
                       title={`${r.date}: ${formatTokens(r.gemini.totalTokens)} token, ${r.gemini.calls} istek`}
                     />
                     <span className="text-[8px] text-slate-400">{r.date.slice(5)}</span>
@@ -352,14 +352,14 @@ export default function Settings() {
         {xLoading ? (
           <div className="text-xs text-slate-400 animate-pulse">Yükleniyor...</div>
         ) : xAccounts.length === 0 ? (
-          <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-6 border border-slate-100 dark:border-white/[0.06] text-center">
+          <div className="bg-slate-50 dark:bg-white/3 rounded-xl p-6 border border-slate-100 dark:border-white/6 text-center">
             <div className="text-sm text-slate-400">Bağlı hesap yok</div>
             <div className="text-[10px] text-slate-400 mt-1">Tweet paylaşmak için bir X hesabı bağlayın</div>
           </div>
         ) : (
           <div className="space-y-2">
             {xAccounts.map(acc => (
-              <div key={acc.id} className="flex items-center justify-between bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 border border-slate-100 dark:border-white/[0.06]">
+              <div key={acc.id} className="flex items-center justify-between bg-slate-50 dark:bg-white/3 rounded-xl p-4 border border-slate-100 dark:border-white/6">
                 <div className="flex items-center gap-3">
                   <span className={`w-2.5 h-2.5 rounded-full ${acc.status === 'active' || acc.status === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                   <div>
@@ -380,7 +380,7 @@ export default function Settings() {
 
         {/* Connect form */}
         {showConnect && (
-          <div className="mt-4 bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 border border-slate-100 dark:border-white/[0.06] space-y-3">
+          <div className="mt-4 bg-slate-50 dark:bg-white/3 rounded-xl p-4 border border-slate-100 dark:border-white/6 space-y-3">
             <div className="text-[10px] font-bold text-slate-400 tracking-wider">YENİ HESAP BAĞLA</div>
             <input
               type="text"
@@ -442,13 +442,13 @@ export default function Settings() {
         ) : (
           <div className="space-y-3">
             {automations.length === 0 ? (
-              <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-6 border border-slate-100 dark:border-white/[0.06] text-center">
+              <div className="bg-slate-50 dark:bg-white/3 rounded-xl p-6 border border-slate-100 dark:border-white/6 text-center">
                 <div className="text-sm text-slate-400">Otomasyon yok</div>
                 <div className="text-[10px] text-slate-400 mt-1">Trend takibi veya zamanlı tweet için otomasyon oluşturun</div>
               </div>
             ) : (
               automations.map(flow => (
-                <div key={flow.id} className="flex items-center justify-between bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 border border-slate-100 dark:border-white/[0.06]">
+                <div key={flow.id} className="flex items-center justify-between bg-slate-50 dark:bg-white/3 rounded-xl p-4 border border-slate-100 dark:border-white/6">
                   <div className="flex items-center gap-3">
                     <span className={`w-2.5 h-2.5 rounded-full ${flow.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
                     <div>
@@ -536,7 +536,7 @@ export default function Settings() {
             { name: 'Kart Koyu', hex: '#16161E', usage: 'Dark mode kartlar' },
           ].map(c => (
             <div key={c.hex} className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl border border-slate-200 dark:border-white/10 flex-shrink-0 shadow-card" style={{ backgroundColor: c.hex }} />
+              <div className="w-12 h-12 rounded-xl border border-slate-200 dark:border-white/10 shrink-0 shadow-card" style={{ backgroundColor: c.hex }} />
               <div>
                 <div className="text-xs text-slate-600 dark:text-slate-300 font-semibold">{c.name}</div>
                 <div className="text-[10px] font-mono text-slate-400">{c.hex}</div>
@@ -553,7 +553,7 @@ export default function Settings() {
           <h2 className="text-sm font-bold text-brand-red tracking-wider">NANO BANANA PRO PROMPT ŞABLONU</h2>
           <CopyBtn text={promptTemplate} label="Şablon Kopyala" />
         </div>
-        <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 text-xs font-mono text-slate-500 dark:text-slate-400 leading-relaxed border border-slate-100 dark:border-white/[0.06]">
+        <div className="bg-slate-50 dark:bg-white/3 rounded-xl p-4 text-xs font-mono text-slate-500 dark:text-slate-400 leading-relaxed border border-slate-100 dark:border-white/6">
           {promptTemplate}
         </div>
         <div className="mt-3 grid grid-cols-3 gap-3 text-[10px] text-slate-400">
@@ -575,8 +575,8 @@ export default function Settings() {
             { num: '5', rule: '"GÜN [SAYI]" yazısı, temiz sans-serif' },
             { num: '6', rule: '1:1 kare format, 2K çözünürlük' },
           ].map(r => (
-            <div key={r.num} className="flex items-start gap-3 text-sm p-3 bg-slate-50 dark:bg-white/[0.03] rounded-xl">
-              <span className="w-7 h-7 rounded-lg bg-brand-gold/10 text-brand-gold text-xs font-bold flex items-center justify-center flex-shrink-0">{r.num}</span>
+            <div key={r.num} className="flex items-start gap-3 text-sm p-3 bg-slate-50 dark:bg-white/3 rounded-xl">
+              <span className="w-7 h-7 rounded-lg bg-brand-gold/10 text-brand-gold text-xs font-bold flex items-center justify-center shrink-0">{r.num}</span>
               <span className="text-slate-600 dark:text-slate-300 mt-0.5">{r.rule}</span>
             </div>
           ))}
@@ -591,7 +591,7 @@ export default function Settings() {
             const isActive = (day - 1) % DAY_PLANS.length === i
             return (
               <div key={i} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                isActive ? 'bg-brand-red/[0.05] dark:bg-brand-red/[0.08] border border-brand-red/15' : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
+                isActive ? 'bg-brand-red/5 dark:bg-brand-red/8 border border-brand-red/15' : 'hover:bg-slate-50 dark:hover:bg-white/3'
               }`}>
                 <span className="text-[10px] font-mono text-slate-400 w-5 text-right">{i + 1}</span>
                 <span className="text-base">{plan.emoji}</span>
@@ -618,8 +618,8 @@ export default function Settings() {
             'Paylasim saati: 09:00 TSI',
             'Ton: yapici, umut dolu, asla saldirgan degil',
           ].map((rule, i) => (
-            <div key={i} className="flex gap-3 items-start p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors">
-              <span className="w-6 h-6 rounded-md bg-brand-gold/10 text-brand-gold text-[10px] font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
+            <div key={i} className="flex gap-3 items-start p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-white/3 transition-colors">
+              <span className="w-6 h-6 rounded-md bg-brand-gold/10 text-brand-gold text-[10px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
               <span className="mt-0.5">{rule}</span>
             </div>
           ))}
@@ -652,8 +652,8 @@ export default function Settings() {
                 <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 tracking-wider mb-3">İÇERİK KURALLARI ({algoData.contentRules.length})</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {algoData.contentRules.map((rule, i) => (
-                    <div key={i} className="flex gap-2 items-start p-2.5 rounded-lg bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06]">
-                      <span className="w-5 h-5 rounded bg-brand-red/10 text-brand-red text-[9px] font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
+                    <div key={i} className="flex gap-2 items-start p-2.5 rounded-lg bg-slate-50 dark:bg-white/3 border border-slate-100 dark:border-white/6">
+                      <span className="w-5 h-5 rounded-sm bg-brand-red/10 text-brand-red text-[9px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
                       <span className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">{rule.rule}</span>
                     </div>
                   ))}
@@ -675,11 +675,11 @@ export default function Settings() {
                     const barWidth = `${Math.max(2, (absWeight / maxWeight) * 100)}%`
                     return (
                       <div key={i} className="flex items-center gap-2">
-                        <div className="w-32 flex-shrink-0 flex items-center gap-1">
+                        <div className="w-32 shrink-0 flex items-center gap-1">
                           <span className="text-[10px] text-slate-600 dark:text-slate-300">{sw.signal}</span>
-                          {isConfirmed && <span className="text-[7px] px-1 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600">kaynak</span>}
+                          {isConfirmed && <span className="text-[7px] px-1 rounded-sm bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600">kaynak</span>}
                         </div>
-                        <div className="flex-1 h-2.5 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                        <div className="flex-1 h-2.5 bg-slate-100 dark:bg-white/4 rounded-full overflow-hidden">
                           <div className={`h-full rounded-full ${isPositive ? 'bg-emerald-500/60' : 'bg-red-500/60'}`} style={{ width: barWidth }} />
                         </div>
                         <span className={`w-10 text-right text-[10px] font-mono font-bold ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -695,7 +695,7 @@ export default function Settings() {
             {/* Engagement Multipliers + Penalties side by side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {algoData.engagementMultipliers.length > 0 && (
-                <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 border border-slate-100 dark:border-white/[0.06]">
+                <div className="bg-slate-50 dark:bg-white/3 rounded-xl p-4 border border-slate-100 dark:border-white/6">
                   <h3 className="text-[10px] font-bold text-slate-400 tracking-wider mb-3">ENGAGEMENT ÇARPANLARI</h3>
                   <div className="space-y-1.5">
                     {algoData.engagementMultipliers.map((em, i) => (
@@ -714,7 +714,7 @@ export default function Settings() {
                   <div className="space-y-1.5">
                     {algoData.topPenalties.map((p, i) => (
                       <div key={i} className="flex gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                        <span className="text-red-500 flex-shrink-0 font-bold">!</span>
+                        <span className="text-red-500 shrink-0 font-bold">!</span>
                         <span>{p}</span>
                       </div>
                     ))}
@@ -736,7 +736,7 @@ export default function Settings() {
               <summary className="text-[10px] font-bold text-slate-400 tracking-wider cursor-pointer hover:text-slate-600 transition-colors">
                 SİSTEM MİMARİSİ (kaynak koddan)
               </summary>
-              <div className="font-mono text-[10px] text-slate-400 leading-loose space-y-0.5 mt-3 pl-2 border-l-2 border-slate-100 dark:border-white/[0.06]">
+              <div className="font-mono text-[10px] text-slate-400 leading-loose space-y-0.5 mt-3 pl-2 border-l-2 border-slate-100 dark:border-white/6">
                 {[
                   '1. Query Hydration → User Action Sequence + Features',
                   '2. Candidate Sources → Thunder (in-network) + Phoenix (OON)',
@@ -766,7 +766,7 @@ export default function Settings() {
             { label: 'Gündem', desc: 'Gündemle bağlantılı tema (mahkeme, AB raporu)' },
           ].map((m, i) => (
             <div key={i} className="flex gap-3 items-start">
-              <span className="chip bg-brand-gold/10 text-brand-gold border-brand-gold/20 w-28 text-center flex-shrink-0 text-[10px]">{m.label}</span>
+              <span className="chip bg-brand-gold/10 text-brand-gold border-brand-gold/20 w-28 text-center shrink-0 text-[10px]">{m.label}</span>
               <span className="mt-0.5">{m.desc}</span>
             </div>
           ))}

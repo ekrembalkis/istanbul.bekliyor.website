@@ -142,7 +142,7 @@ export default function HaberServisi() {
               Son: {getRelativeTime(fetchedAt)}
             </span>
           )}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-red/[0.06] border border-brand-red/10">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-red/6 border border-brand-red/10">
             <span className="live-dot" />
             <span className="text-[10px] font-bold tracking-[2px] text-brand-red">
               {okCount}/{totalCount} KAYNAK
@@ -161,8 +161,8 @@ export default function HaberServisi() {
               onClick={() => setFilter(f => ({ ...f, category: cat.key }))}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
                 filter.category === cat.key
-                  ? 'bg-brand-red text-white shadow-sm'
-                  : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/[0.1]'
+                  ? 'bg-brand-red text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-white/6 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10'
               }`}
             >
               {cat.label}
@@ -175,7 +175,7 @@ export default function HaberServisi() {
           <select
             value={filter.source}
             onChange={e => setFilter(f => ({ ...f, source: e.target.value }))}
-            className="px-3 py-2 text-xs rounded-lg border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-dark-bg text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-red/20"
+            className="px-3 py-2 text-xs rounded-lg border border-black/8 dark:border-white/8 bg-white dark:bg-dark-bg text-slate-700 dark:text-slate-300 focus:outline-hidden focus:ring-2 focus:ring-brand-red/20"
           >
             {SOURCES.map(s => (
               <option key={s.key} value={s.key}>{s.label}</option>
@@ -187,7 +187,7 @@ export default function HaberServisi() {
             placeholder="Haberlerde ara..."
             value={filter.searchQuery}
             onChange={e => setFilter(f => ({ ...f, searchQuery: e.target.value }))}
-            className="flex-1 px-3 py-2 text-xs rounded-lg border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-dark-bg text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-red/20"
+            className="flex-1 px-3 py-2 text-xs rounded-lg border border-black/8 dark:border-white/8 bg-white dark:bg-dark-bg text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-red/20"
           />
 
           <button
@@ -195,7 +195,7 @@ export default function HaberServisi() {
             className={`px-3 py-2 text-xs font-medium rounded-lg border transition-all whitespace-nowrap ${
               filter.campaignOnly
                 ? 'bg-brand-red/10 border-brand-red/30 text-brand-red'
-                : 'border-black/[0.08] dark:border-white/[0.08] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.06]'
+                : 'border-black/8 dark:border-white/8 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/6'
             }`}
           >
             Kampanya Sinyali
@@ -215,9 +215,9 @@ export default function HaberServisi() {
         <div className="space-y-4">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="card p-5 animate-pulse">
-              <div className="h-3 bg-slate-200 dark:bg-white/[0.06] rounded w-16 mb-3" />
-              <div className="h-4 bg-slate-200 dark:bg-white/[0.06] rounded w-3/4 mb-2" />
-              <div className="h-3 bg-slate-200 dark:bg-white/[0.06] rounded w-full" />
+              <div className="h-3 bg-slate-200 dark:bg-white/6 rounded-sm w-16 mb-3" />
+              <div className="h-4 bg-slate-200 dark:bg-white/6 rounded-sm w-3/4 mb-2" />
+              <div className="h-3 bg-slate-200 dark:bg-white/6 rounded-sm w-full" />
             </div>
           ))}
         </div>
@@ -304,7 +304,7 @@ export default function HaberServisi() {
       {/* Instagram Content Modal */}
       {igModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
           onClick={() => setIgModal(null)}
         >
           <div
@@ -312,14 +312,14 @@ export default function HaberServisi() {
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-dark-card rounded-t-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-black/6 dark:border-white/6 bg-white dark:bg-dark-card rounded-t-2xl">
               <div className="flex items-center gap-2">
                 <span className="text-fuchsia-500 text-lg">&#9632;</span>
                 <h3 className="text-sm font-bold text-slate-800 dark:text-white">Instagram İçeriği</h3>
               </div>
               <button
                 onClick={() => setIgModal(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-white/6 transition-colors"
               >
                 &#10005;
               </button>
@@ -390,7 +390,7 @@ export default function HaberServisi() {
                   </button>
 
                   {/* Image Search Section */}
-                  <div className="pt-4 mt-4 border-t border-black/[0.06] dark:border-white/[0.06]">
+                  <div className="pt-4 mt-4 border-t border-black/6 dark:border-white/6">
                     <div className="text-[10px] font-bold text-slate-400 tracking-wider mb-2">GÖRSEL ARA</div>
                     <div className="flex gap-2 mb-3">
                       <input
@@ -398,7 +398,7 @@ export default function HaberServisi() {
                         value={igModal.imageQuery}
                         onChange={e => setIgModal(prev => prev ? { ...prev, imageQuery: e.target.value } : null)}
                         onKeyDown={e => e.key === 'Enter' && handleImageSearch(igModal.imageQuery)}
-                        className="flex-1 px-3 py-2 text-xs rounded-lg border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-dark-bg text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20"
+                        className="flex-1 px-3 py-2 text-xs rounded-lg border border-black/8 dark:border-white/8 bg-white dark:bg-dark-bg text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-fuchsia-500/20"
                         placeholder="Görsel ara..."
                       />
                       <button
@@ -432,7 +432,7 @@ export default function HaberServisi() {
                         {igModal.selectedImage && (
                           <button
                             onClick={() => handleCopy(igModal.selectedImage!)}
-                            className="w-full mt-2 py-2 text-xs font-bold text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-500/[0.08] hover:bg-fuchsia-500/[0.15] rounded-lg transition-colors"
+                            className="w-full mt-2 py-2 text-xs font-bold text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-500/8 hover:bg-fuchsia-500/15 rounded-lg transition-colors"
                           >
                             Görsel URL Kopyala
                           </button>
@@ -448,7 +448,7 @@ export default function HaberServisi() {
                   {/* Regenerate */}
                   <button
                     onClick={() => handleInstagram(igModal.item)}
-                    className="w-full py-2 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] rounded-lg transition-colors"
+                    className="w-full py-2 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/6 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg transition-colors"
                   >
                     Yeniden Oluştur
                   </button>
@@ -488,14 +488,14 @@ function NewsCard({
         <div className="flex-1 min-w-0">
           {/* Badges */}
           <div className="flex flex-wrap items-center gap-1.5 mb-2">
-            <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${sourceColor}`}>
+            <span className={`inline-flex px-2 py-0.5 rounded-sm text-[10px] font-bold ${sourceColor}`}>
               {item.sourceLabel}
             </span>
-            <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-medium ${categoryColor}`}>
+            <span className={`inline-flex px-2 py-0.5 rounded-sm text-[10px] font-medium ${categoryColor}`}>
               {categoryLabel}
             </span>
             {item.isCampaignSignal && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-brand-red/10 text-brand-red">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold bg-brand-red/10 text-brand-red">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-red animate-pulse" />
                 Kampanya
               </span>
@@ -525,7 +525,7 @@ function NewsCard({
 
         {/* Image thumbnail */}
         {item.imageUrl && (
-          <div className="hidden sm:block flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-slate-100 dark:bg-white/[0.06]">
+          <div className="hidden sm:block shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-slate-100 dark:bg-white/6">
             <img
               src={item.imageUrl}
               alt=""
@@ -538,16 +538,16 @@ function NewsCard({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-black/[0.04] dark:border-white/[0.04]">
+      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-black/4 dark:border-white/4">
         <button
           onClick={() => onUseTweet(item)}
-          className="px-3 py-1.5 text-[11px] font-medium text-brand-red bg-brand-red/[0.06] hover:bg-brand-red/[0.12] rounded-lg transition-colors"
+          className="px-3 py-1.5 text-[11px] font-medium text-brand-red bg-brand-red/6 hover:bg-brand-red/12 rounded-lg transition-colors"
         >
           Tweet İçin Kullan
         </button>
         <button
           onClick={() => onInstagram(item)}
-          className="px-3 py-1.5 text-[11px] font-medium text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-500/[0.06] hover:bg-fuchsia-500/[0.12] rounded-lg transition-colors"
+          className="px-3 py-1.5 text-[11px] font-medium text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-500/6 hover:bg-fuchsia-500/12 rounded-lg transition-colors"
         >
           Instagram İçin Kullan
         </button>
@@ -555,7 +555,7 @@ function NewsCard({
           href={item.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-3 py-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] rounded-lg transition-colors"
+          className="px-3 py-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/6 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg transition-colors"
         >
           Habere Git
         </a>
@@ -593,7 +593,7 @@ function ImageGrid({
             className={`group relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
               isSelected
                 ? 'border-fuchsia-500 ring-2 ring-fuchsia-500/30 bg-fuchsia-500/10'
-                : 'border-black/[0.06] dark:border-white/[0.06] hover:border-fuchsia-400/60 hover:scale-[1.03]'
+                : 'border-black/6 dark:border-white/6 hover:border-fuchsia-400/60 hover:scale-[1.03]'
             }`}
           >
             {!hasFailed ? (
@@ -605,7 +605,7 @@ function ImageGrid({
                 onError={() => setFailedThumbs(prev => new Set(prev).add(img.id))}
               />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 dark:bg-white/[0.04] text-slate-400">
+              <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 dark:bg-white/4 text-slate-400">
                 <span className="text-lg">&#128247;</span>
                 <span className="text-[9px] mt-1">Yüklenemedi</span>
               </div>
@@ -615,7 +615,7 @@ function ImageGrid({
             {isSelected && (
               <>
                 <div className="absolute inset-0 bg-fuchsia-500/20" />
-                <div className="absolute bottom-1 left-1 right-1 py-0.5 rounded text-[9px] font-bold text-center bg-fuchsia-500/80 text-white">
+                <div className="absolute bottom-1 left-1 right-1 py-0.5 rounded-sm text-[9px] font-bold text-center bg-fuchsia-500/80 text-white">
                   Seçili
                 </div>
               </>
@@ -623,7 +623,7 @@ function ImageGrid({
 
             {/* Title tooltip on hover */}
             {img.title && !isSelected && (
-              <div className="absolute inset-x-0 bottom-0 p-1.5 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute inset-x-0 bottom-0 p-1.5 bg-linear-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                 <p className="text-[9px] text-white truncate">{img.title}</p>
               </div>
             )}
@@ -656,8 +656,8 @@ function ContentBlock({
   }
 
   return (
-    <div className="rounded-xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-white/[0.03]">
+    <div className="rounded-xl border border-black/6 dark:border-white/6 overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-white/3">
         <div>
           <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">{label}</span>
           <span className="text-[10px] text-slate-400 ml-2">{sublabel}</span>

@@ -148,7 +148,7 @@ export default function Planner() {
               <label className="text-[10px] font-bold text-brand-red tracking-wider">NANO BANANA PRO PROMPT</label>
               {activePrompt && <CopyBtn text={activePrompt} label="Kopyala" />}
             </div>
-            <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 text-xs font-mono text-slate-500 dark:text-slate-400 leading-relaxed max-h-48 overflow-y-auto border border-slate-100 dark:border-white/[0.06]">
+            <div className="bg-slate-50 dark:bg-white/3 rounded-xl p-4 text-xs font-mono text-slate-500 dark:text-slate-400 leading-relaxed max-h-48 overflow-y-auto border border-slate-100 dark:border-white/6">
               {promptLoading ? (
                 <div className="flex items-center gap-2 py-4 justify-center text-slate-400">
                   <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" /><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" className="opacity-75" /></svg>
@@ -192,7 +192,7 @@ export default function Planner() {
         {/* Right: Scores + Checklist */}
         <div className="space-y-5">
           {/* Xquik Algorithm Score */}
-          <div className={`card rounded-2xl p-6 ${algoResult ? (algoResult.passed ? getScoreBg(100) : getScoreBg(algoScore)) : 'bg-slate-50 dark:bg-white/[0.03]'}`}>
+          <div className={`card rounded-2xl p-6 ${algoResult ? (algoResult.passed ? getScoreBg(100) : getScoreBg(algoScore)) : 'bg-slate-50 dark:bg-white/3'}`}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <label className="text-[10px] font-bold text-slate-400 tracking-wider">ALGORITMA SKORU</label>
@@ -254,8 +254,8 @@ export default function Planner() {
               'Display name guncellendi (GUN sayisi)',
               'Sabah 09:00 TSI civarinda paylasacagim',
             ].map((item, i) => (
-              <label key={i} className="flex items-center gap-3 py-2 text-sm text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-white transition-colors border-b border-slate-50 dark:border-white/[0.04] last:border-0">
-                <input type="checkbox" className="rounded w-4 h-4" />
+              <label key={i} className="flex items-center gap-3 py-2 text-sm text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-white transition-colors border-b border-slate-50 dark:border-white/4 last:border-0">
+                <input type="checkbox" className="rounded-sm w-4 h-4" />
                 <span>{item}</span>
               </label>
             ))}

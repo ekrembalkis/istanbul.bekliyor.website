@@ -73,7 +73,7 @@ export default function Calendar() {
       <div className="card p-6">
         {/* Month navigation */}
         <div className="flex items-center justify-between mb-5">
-          <button onClick={prevMonth} className="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
+          <button onClick={prevMonth} className="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/6 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <div className="text-center">
@@ -82,7 +82,7 @@ export default function Calendar() {
               <button onClick={goToday} className="text-[10px] text-brand-red hover:underline mt-0.5">Bugüne dön</button>
             )}
           </div>
-          <button onClick={nextMonth} className="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
+          <button onClick={nextMonth} className="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-white/6 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
         </div>
@@ -121,10 +121,10 @@ export default function Calendar() {
                       : isMilestone
                         ? 'bg-brand-gold/10 border border-brand-gold/30 text-brand-gold'
                         : isBeforeCampaign
-                          ? 'text-slate-200 dark:text-white/[0.1] cursor-default'
+                          ? 'text-slate-200 dark:text-white/10 cursor-default'
                           : isPast
-                            ? 'bg-slate-50 dark:bg-white/[0.02] text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.06]'
-                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.04]'
+                            ? 'bg-slate-50 dark:bg-white/2 text-slate-400 hover:bg-slate-100 dark:hover:bg-white/6'
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/4'
                 }`}
               >
                 {/* Calendar date */}
@@ -154,17 +154,17 @@ export default function Calendar() {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
+        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-100 dark:border-white/6">
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-            <div className="w-3 h-3 rounded bg-brand-red/10 border-2 border-brand-red" />
+            <div className="w-3 h-3 rounded-sm bg-brand-red/10 border-2 border-brand-red" />
             <span>Bugün</span>
           </div>
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-            <div className="w-3 h-3 rounded bg-brand-gold/10 border border-brand-gold/30" />
+            <div className="w-3 h-3 rounded-sm bg-brand-gold/10 border border-brand-gold/30" />
             <span>Milestone</span>
           </div>
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-            <div className="w-3 h-3 rounded bg-slate-50 dark:bg-white/[0.04]" />
+            <div className="w-3 h-3 rounded-sm bg-slate-50 dark:bg-white/4" />
             <span>Geçmiş</span>
           </div>
         </div>
@@ -212,7 +212,7 @@ export default function Calendar() {
                 <div className="text-[10px] font-bold text-slate-400 tracking-wider">TWEET</div>
                 <CopyBtn text={selectedPlan.tweetTemplate} label="Kopyala" />
               </div>
-              <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-3 text-sm text-slate-600 dark:text-slate-300 whitespace-pre-line leading-relaxed border border-slate-100 dark:border-white/[0.06]">
+              <div className="bg-slate-50 dark:bg-white/3 rounded-xl p-3 text-sm text-slate-600 dark:text-slate-300 whitespace-pre-line leading-relaxed border border-slate-100 dark:border-white/6">
                 {selectedPlan.tweetTemplate}
               </div>
             </div>
@@ -225,7 +225,7 @@ export default function Calendar() {
               </div>
               <details className="group">
                 <summary className="text-[10px] text-blue-500 cursor-pointer hover:text-blue-600">Prompt'u göster</summary>
-                <div className="mt-2 bg-slate-50 dark:bg-white/[0.03] rounded-xl p-3 text-[11px] font-mono text-slate-400 leading-relaxed border border-slate-100 dark:border-white/[0.06]">
+                <div className="mt-2 bg-slate-50 dark:bg-white/3 rounded-xl p-3 text-[11px] font-mono text-slate-400 leading-relaxed border border-slate-100 dark:border-white/6">
                   {selectedPlan.prompt}
                 </div>
               </details>

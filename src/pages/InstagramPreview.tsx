@@ -119,13 +119,13 @@ export default function InstagramPreview() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <section className="relative overflow-hidden rounded-[2rem] border border-black/[0.06] bg-white px-6 py-8 shadow-card dark:border-white/[0.06] dark:bg-dark-card sm:px-8">
-        <div className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,_rgba(227,10,23,0.12),_transparent_50%)]" />
+      <section className="relative overflow-hidden rounded-4xl border border-black/6 bg-white px-6 py-8 shadow-card dark:border-white/6 dark:bg-dark-card sm:px-8">
+        <div className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(227,10,23,0.12),transparent_50%)]" />
         <div className="absolute bottom-0 left-0 h-44 w-44 rounded-full bg-brand-gold/10 blur-3xl" />
 
         <div className="relative grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
           <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-red/15 bg-brand-red/[0.06] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.25em] text-brand-red">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-red/15 bg-brand-red/6 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.25em] text-brand-red">
               Instagram Preview Lab
             </div>
             <h1 className="max-w-3xl font-serif text-3xl font-bold tracking-tight text-slate-850 dark:text-white sm:text-4xl">
@@ -147,15 +147,15 @@ export default function InstagramPreview() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            <div className="rounded-[1.5rem] border border-black/[0.06] bg-slate-50/80 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <div className="rounded-3xl border border-black/6 bg-slate-50/80 p-4 dark:border-white/6 dark:bg-white/3">
               <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">Toplam kart</div>
               <div className="mt-3 stat-number text-4xl text-slate-850 dark:text-white">{assets.length}</div>
             </div>
-            <div className="rounded-[1.5rem] border border-black/[0.06] bg-slate-50/80 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <div className="rounded-3xl border border-black/6 bg-slate-50/80 p-4 dark:border-white/6 dark:bg-white/3">
               <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">Reels kart</div>
               <div className="mt-3 stat-number text-4xl text-brand-red">{reelsAssets.length}</div>
             </div>
-            <div className="rounded-[1.5rem] border border-black/[0.06] bg-slate-50/80 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <div className="rounded-3xl border border-black/6 bg-slate-50/80 p-4 dark:border-white/6 dark:bg-white/3">
               <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">Hero explore</div>
               <div className="mt-3 stat-number text-4xl text-brand-gold">{heroCount}</div>
             </div>
@@ -166,7 +166,7 @@ export default function InstagramPreview() {
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
         <div className="space-y-6">
           <div className="card overflow-hidden p-4 sm:p-6">
-            <div className="flex flex-col gap-4 border-b border-black/[0.06] pb-5 dark:border-white/[0.06] sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-4 border-b border-black/6 pb-5 dark:border-white/6 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <div className="section-header">
                   <h2 className="font-serif text-2xl font-bold text-slate-850 dark:text-white">Canli yuzey</h2>
@@ -182,7 +182,7 @@ export default function InstagramPreview() {
                     className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] transition-all ${
                       surface === item
                         ? 'bg-brand-red text-white shadow-[0_10px_18px_rgba(227,10,23,0.22)]'
-                        : 'bg-slate-100 text-slate-500 dark:bg-white/[0.05] dark:text-slate-400'
+                        : 'bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400'
                     }`}
                   >
                     {SURFACE_LABELS[item]}
@@ -197,7 +197,7 @@ export default function InstagramPreview() {
                   <PreviewMedia
                     key={asset.id}
                     asset={asset}
-                    aspectClass="aspect-[3/4]"
+                    aspectClass="aspect-3/4"
                     selected={asset.id === selectedAsset?.id}
                     showGuide={asset.id === selectedAsset?.id}
                     guideMode="profile"
@@ -213,14 +213,14 @@ export default function InstagramPreview() {
                   <PreviewMedia
                     key={asset.id}
                     asset={asset}
-                    aspectClass="aspect-[9/16]"
+                    aspectClass="aspect-9/16"
                     selected={asset.id === selectedAsset?.id}
                     showGuide={asset.id === selectedAsset?.id}
                     guideMode="reel"
                     onClick={() => setSelectedId(asset.id)}
                   />
                 )) : (
-                  <div className="col-span-full rounded-[1.5rem] border border-dashed border-black/[0.1] p-10 text-center text-sm text-slate-400 dark:border-white/[0.08]">
+                  <div className="col-span-full rounded-3xl border border-dashed border-black/10 p-10 text-center text-sm text-slate-400 dark:border-white/8">
                     Reels grid preview icin en az bir karti <span className="font-semibold text-brand-red">reel</span> turune cevir.
                   </div>
                 )}
@@ -253,8 +253,8 @@ export default function InstagramPreview() {
                 <h2 className="font-serif text-xl font-bold text-slate-850 dark:text-white">Acilmis gorunum</h2>
               </div>
               {selectedAsset && (
-                <div className="mt-5 rounded-[2rem] bg-slate-950 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.38)]">
-                  <div className="mx-auto w-full max-w-[320px] rounded-[2rem] border border-white/10 bg-[#09090f] p-3">
+                <div className="mt-5 rounded-4xl bg-slate-950 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.38)]">
+                  <div className="mx-auto w-full max-w-[320px] rounded-4xl border border-white/10 bg-[#09090f] p-3">
                     <div className="mb-3 flex justify-center">
                       <div className="h-1.5 w-20 rounded-full bg-white/20" />
                     </div>
@@ -269,9 +269,9 @@ export default function InstagramPreview() {
                         className="absolute inset-0 h-full w-full object-cover"
                         style={{ objectPosition: `${selectedAsset.focalX}% ${selectedAsset.focalY}%` }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
                       {selectedAsset.kind === 'reel' && (
-                        <div className="pointer-events-none absolute inset-x-[12.5%] inset-y-[12.5%] rounded-[1rem] border border-white/80 border-dashed" />
+                        <div className="pointer-events-none absolute inset-x-[12.5%] inset-y-[12.5%] rounded-2xl border border-white/80 border-dashed" />
                       )}
                       <div className="absolute bottom-0 left-0 right-0 p-4">
                         <div className="text-xs font-bold uppercase tracking-[0.24em] text-white/70">
@@ -291,7 +291,7 @@ export default function InstagramPreview() {
               </div>
               <div className="mt-5 space-y-3">
                 {getPreviewNotes(surface).map(note => (
-                  <div key={note} className="flex gap-3 rounded-[1rem] border border-black/[0.06] bg-slate-50/70 p-4 text-sm leading-6 text-slate-600 dark:border-white/[0.06] dark:bg-white/[0.03] dark:text-slate-300">
+                  <div key={note} className="flex gap-3 rounded-2xl border border-black/6 bg-slate-50/70 p-4 text-sm leading-6 text-slate-600 dark:border-white/6 dark:bg-white/3 dark:text-slate-300">
                     <span className="mt-1 h-2 w-2 rounded-full bg-brand-red" />
                     <span>{note}</span>
                   </div>
@@ -346,7 +346,7 @@ export default function InstagramPreview() {
                       className={`w-full rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${
                         selectedAsset.highlight
                           ? 'border-brand-gold bg-brand-gold-light text-brand-gold'
-                          : 'border-black/[0.08] bg-white text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-slate-300'
+                          : 'border-black/8 bg-white text-slate-500 dark:border-white/8 dark:bg-white/4 dark:text-slate-300'
                       }`}
                     >
                       {selectedAsset.highlight ? 'Hero aktif' : 'Hero kapali'}
@@ -364,7 +364,7 @@ export default function InstagramPreview() {
                   />
                 </div>
 
-                <div className="rounded-[1.25rem] border border-black/[0.06] bg-slate-50/70 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+                <div className="rounded-[1.25rem] border border-black/6 bg-slate-50/70 p-4 dark:border-white/6 dark:bg-white/3">
                   <div className="mb-3 flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
                     <span>Odak noktasi</span>
                     <span>{selectedAsset.focalX}% / {selectedAsset.focalY}%</span>
@@ -396,7 +396,7 @@ export default function InstagramPreview() {
                   </div>
                 </div>
 
-                <div className="rounded-[1.25rem] border border-black/[0.06] bg-slate-50/70 p-4 text-sm text-slate-500 dark:border-white/[0.06] dark:bg-white/[0.03] dark:text-slate-300">
+                <div className="rounded-[1.25rem] border border-black/6 bg-slate-50/70 p-4 text-sm text-slate-500 dark:border-white/6 dark:bg-white/3 dark:text-slate-300">
                   <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Kaynak oran</div>
                   <div className="mt-2 font-semibold text-slate-800 dark:text-white">{getRatioLabel(selectedAsset.sourceRatio)}</div>
                   <div className="mt-2 text-xs leading-6 text-slate-400">
@@ -416,7 +416,7 @@ export default function InstagramPreview() {
                         className={`rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] transition-all ${
                           getRatioLabel(selectedAsset.sourceRatio) === option.label
                             ? 'bg-brand-red text-white'
-                            : 'bg-white text-slate-500 dark:bg-white/[0.05] dark:text-slate-300'
+                            : 'bg-white text-slate-500 dark:bg-white/5 dark:text-slate-300'
                         }`}
                       >
                         {option.label}
@@ -461,8 +461,8 @@ export default function InstagramPreview() {
                   onClick={() => setSelectedId(asset.id)}
                   className={`flex w-full items-center gap-3 rounded-[1.1rem] border px-3 py-3 text-left transition-all ${
                     asset.id === selectedAsset?.id
-                      ? 'border-brand-red bg-brand-red/[0.05]'
-                      : 'border-black/[0.06] bg-slate-50/60 dark:border-white/[0.06] dark:bg-white/[0.03]'
+                      ? 'border-brand-red bg-brand-red/5'
+                      : 'border-black/6 bg-slate-50/60 dark:border-white/6 dark:bg-white/3'
                   }`}
                 >
                   <img

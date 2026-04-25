@@ -16,7 +16,7 @@ export const DAY_PLANS: DayPlan[] = [
     emoji: '⏳',
     scene: 'Ofis koltuğu karanlık odada',
     goldenElement: 'Koltuğa düşen ışık',
-    prompt: `Minimalist editorial photograph of an empty executive office chair in the center of a dark barely lit room. The chair is modern black leather positioned facing the viewer. A single beam of warm amber light falls diagonally across the chair from upper left creating a sharp geometric shadow on the floor. Everything else is deep black and dark gray. Stark high contrast black and white with only the light beam having a subtle warm golden tone (#D4A843). Bold clean text reading "GÜN {day}" in large uppercase sans-serif font at the top of the frame. Brutalist minimalist style. 1:1 aspect ratio at 2K resolution.`,
+    prompt: `Minimalist editorial photograph of an empty executive office chair in the center of a dark barely lit room. The chair is modern black leather positioned facing the viewer. A single beam of warm amber light falls diagonally across the chair from upper left creating a sharp geometric shadow-sm on the floor. Everything else is deep black and dark gray. Stark high contrast black and white with only the light beam having a subtle warm golden tone (#D4A843). Bold clean text reading "GÜN {day}" in large uppercase sans-serif font at the top of the frame. Brutalist minimalist style. 1:1 aspect ratio at 2K resolution.`,
     tweetTemplate: `GÜN {day}.
 
 İstanbul seçilmiş belediye başkanını bekliyor.
@@ -120,7 +120,7 @@ Bu şehrin çocukları bir gün bunu tarih kitaplarında okuyacak.
     emoji: '🏛️',
     scene: 'Kuşbakışı boş meydan',
     goldenElement: 'Tek kişinin gölgesi',
-    prompt: `Minimalist aerial photograph looking straight down at a vast empty public square shot in black and white. Cobblestone texture visible. In the exact center of the square a single person long shadow stretches across the ground cast by low golden amber light (#D4A843) from the edge of frame. The person themselves is tiny almost invisible. Massive negative space. Drone shot perfectly symmetrical. Bold clean text reading "GÜN {day}" in large uppercase sans-serif font. 1:1 aspect ratio at 2K resolution.`,
+    prompt: `Minimalist aerial photograph looking straight down at a vast empty public square shot in black and white. Cobblestone texture visible. In the exact center of the square a single person long shadow-sm stretches across the ground cast by low golden amber light (#D4A843) from the edge of frame. The person themselves is tiny almost invisible. Massive negative space. Drone shot perfectly symmetrical. Bold clean text reading "GÜN {day}" in large uppercase sans-serif font. 1:1 aspect ratio at 2K resolution.`,
     tweetTemplate: `GÜN {day}.
 
 Bir kişi bile durduğu sürece,
@@ -291,7 +291,7 @@ Sahibi {day} gündür gelmiyor.
     emoji: '🏙️',
     scene: 'İstanbul manzaralı balkon',
     goldenElement: 'Korkulukta altın ışık',
-    prompt: `Minimalist photograph of an empty balcony overlooking the Istanbul cityscape at dusk shot in black and white. Iron railing in foreground the city a blur of dark shapes behind. A single section of the railing catches warm amber light (#D4A843) from the setting sun. A single empty chair on the balcony. Shot on 35mm lens. Bold clean text reading "GÜN {day}" in large uppercase sans-serif font. Longing atmospheric. 1:1 aspect ratio at 2K resolution.`,
+    prompt: `Minimalist photograph of an empty balcony overlooking the Istanbul cityscape at dusk shot in black and white. Iron railing in foreground the city a blur-sm of dark shapes behind. A single section of the railing catches warm amber light (#D4A843) from the setting sun. A single empty chair on the balcony. Shot on 35mm lens. Bold clean text reading "GÜN {day}" in large uppercase sans-serif font. Longing atmospheric. 1:1 aspect ratio at 2K resolution.`,
     tweetTemplate: `GÜN {day}.
 
 Balkondan İstanbul'a bakmak.
@@ -319,7 +319,7 @@ Deniz fenerleri en karanlık gecelerde yanar.
     emoji: '🚰',
     scene: 'Osmanlı çeşmesi',
     goldenElement: 'Akan su altın',
-    prompt: `Minimalist photograph of an old Ottoman stone fountain in a dark alley shot in stark black and white. Ornate carved stone weathered by centuries. A thin stream of water flows from the spout rendered in warm amber gold (#D4A843) catching light. Everything else is deep shadow and gray stone. Shot on 85mm lens. Bold clean text reading "GÜN {day}" in large uppercase sans-serif font. Enduring timeless. 1:1 aspect ratio at 2K resolution.`,
+    prompt: `Minimalist photograph of an old Ottoman stone fountain in a dark alley shot in stark black and white. Ornate carved stone weathered by centuries. A thin stream of water flows from the spout rendered in warm amber gold (#D4A843) catching light. Everything else is deep shadow-sm and gray stone. Shot on 85mm lens. Bold clean text reading "GÜN {day}" in large uppercase sans-serif font. Enduring timeless. 1:1 aspect ratio at 2K resolution.`,
     tweetTemplate: `GÜN {day}.
 
 Çeşmeler yüzyıllardır akıyor.

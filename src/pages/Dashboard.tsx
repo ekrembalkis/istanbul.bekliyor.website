@@ -32,12 +32,12 @@ export default function Dashboard() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-2xl bg-white dark:bg-dark-card border border-black/[0.06] dark:border-white/[0.06] shadow-card dark:shadow-dark-card transition-colors">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-brand-red/[0.03] to-transparent rounded-full -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-brand-gold/[0.04] to-transparent rounded-full translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+      <section className="relative overflow-hidden rounded-2xl bg-white dark:bg-dark-card border border-black/6 dark:border-white/6 shadow-card dark:shadow-dark-card transition-colors">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-linear-to-bl from-brand-red/3 to-transparent rounded-full -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-linear-to-tr from-brand-gold/[0.04] to-transparent rounded-full translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
         <div className="relative px-8 py-12 sm:px-12 sm:py-16 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-red/[0.06] border border-brand-red/10 mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-red/6 border border-brand-red/10 mb-8">
             <span className="live-dot" />
             <span className="text-[11px] font-bold tracking-[3px] text-brand-red uppercase">Canlı Veri</span>
           </div>
@@ -119,7 +119,7 @@ export default function Dashboard() {
           <div className="mt-4">
             <div className="text-xs font-mono tracking-[3px] text-brand-gold font-semibold mb-1">{plan.theme.toUpperCase()}</div>
             <div className="text-[11px] text-slate-400 mb-4">Sahne: {plan.scene} · Altın: {plan.goldenElement}</div>
-            <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-line mb-4 max-h-40 overflow-y-auto border border-slate-100 dark:border-white/[0.06]">
+            <div className="bg-slate-50 dark:bg-white/3 rounded-xl p-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-line mb-4 max-h-40 overflow-y-auto border border-slate-100 dark:border-white/6">
               {plan.tweetTemplate}
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -140,14 +140,14 @@ export default function Dashboard() {
               <div>
                 <label className="text-[10px] font-bold text-slate-400 tracking-wider block mb-1.5">DISPLAY NAME</label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 input-field rounded-lg px-3 py-2 text-sm font-mono text-brand-red truncate bg-slate-50 dark:bg-white/[0.03]">{displayName}</code>
+                  <code className="flex-1 input-field rounded-lg px-3 py-2 text-sm font-mono text-brand-red truncate bg-slate-50 dark:bg-white/3">{displayName}</code>
                   <CopyBtn text={displayName} />
                 </div>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-slate-400 tracking-wider block mb-1.5">BIO</label>
                 <div className="flex items-start gap-2">
-                  <code className="flex-1 input-field rounded-lg px-3 py-2 text-xs font-mono text-slate-500 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-white/[0.03]">{bio}</code>
+                  <code className="flex-1 input-field rounded-lg px-3 py-2 text-xs font-mono text-slate-500 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-white/3">{bio}</code>
                   <CopyBtn text={bio} />
                 </div>
               </div>
@@ -202,7 +202,7 @@ export default function Dashboard() {
                     { label: 'Toplam RT', value: perf.totalRetweets.toLocaleString(), color: 'text-emerald-500' },
                     { label: 'Ort. Like', value: perf.avgLikes.toLocaleString(), color: 'text-amber-500' },
                   ].map(s => (
-                    <div key={s.label} className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-3 border border-slate-100 dark:border-white/[0.06] text-center">
+                    <div key={s.label} className="bg-slate-50 dark:bg-white/3 rounded-xl p-3 border border-slate-100 dark:border-white/6 text-center">
                       <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
                       <div className="text-[10px] text-slate-400 mt-0.5">{s.label}</div>
                     </div>
@@ -224,7 +224,7 @@ export default function Dashboard() {
                     <div className="text-[10px] font-bold text-slate-400 tracking-wider mb-2">EN İYİ KONULAR</div>
                     <div className="flex flex-wrap gap-1.5">
                       {perf.topTopics.map(tp => (
-                        <span key={tp.topic} className="text-[10px] px-2 py-1 rounded-lg bg-slate-50 dark:bg-white/[0.04] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/[0.08]">
+                        <span key={tp.topic} className="text-[10px] px-2 py-1 rounded-lg bg-slate-50 dark:bg-white/4 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/8">
                           {tp.topic} <span className="text-pink-500">♥{tp.avgLikes}</span>
                         </span>
                       ))}
@@ -273,7 +273,7 @@ export default function Dashboard() {
                   pass: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20',
                   fail: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20',
                   inconclusive: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20',
-                  skipped: 'bg-slate-50 dark:bg-white/[0.03] text-slate-400 border-slate-200 dark:border-white/[0.06]',
+                  skipped: 'bg-slate-50 dark:bg-white/3 text-slate-400 border-slate-200 dark:border-white/6',
                   error: 'bg-red-50 dark:bg-red-500/10 text-red-400 border-red-200 dark:border-red-500/20',
                 }
                 const icons: Record<string, string> = {
@@ -356,7 +356,7 @@ export default function Dashboard() {
             { step: '03', time: '5 dk', label: 'Tweet yaz + algoritma kontrol', accent: 'border-l-brand-gold' },
             { step: '04', time: '5 dk', label: "Paylaş + reply'lara cevap", accent: 'border-l-emerald-400' },
           ].map(s => (
-            <div key={s.step} className={`bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 border-l-[3px] ${s.accent} hover:bg-slate-100/80 dark:hover:bg-white/[0.05] transition-colors`}>
+            <div key={s.step} className={`bg-slate-50 dark:bg-white/3 rounded-xl p-4 border-l-[3px] ${s.accent} hover:bg-slate-100/80 dark:hover:bg-white/5 transition-colors`}>
               <div className="text-[10px] font-bold text-slate-400 tracking-widest mb-2">ADIM {s.step}</div>
               <div className="text-xs text-slate-400 mb-1">{s.time}</div>
               <div className="text-sm text-slate-600 dark:text-slate-300 font-medium">{s.label}</div>

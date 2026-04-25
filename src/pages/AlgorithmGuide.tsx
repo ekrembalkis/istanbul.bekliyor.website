@@ -63,15 +63,15 @@ export default function AlgorithmGuide() {
 
               return (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="w-40 flex-shrink-0">
+                  <div className="w-40 shrink-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">{sw.signal}</span>
                       {isConfirmed && (
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">kaynak</span>
+                        <span className="text-[8px] px-1 py-0.5 rounded-sm bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">kaynak</span>
                       )}
                     </div>
                   </div>
-                  <div className="flex-1 h-4 bg-slate-100 dark:bg-white/[0.04] rounded-full overflow-hidden">
+                  <div className="flex-1 h-4 bg-slate-100 dark:bg-white/4 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full opacity-60 ${isPositive ? 'bg-emerald-500' : 'bg-red-500'}`}
                       style={{ width: barWidth, minWidth: '4px' }}
@@ -93,7 +93,7 @@ export default function AlgorithmGuide() {
           <h2 className="text-lg font-serif font-bold text-slate-700 dark:text-slate-200 mb-5">Engagement Carpanlari</h2>
           <div className="space-y-2">
             {data.engagementMultipliers.map((em, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-slate-50 dark:border-white/[0.04] last:border-0">
+              <div key={i} className="flex items-center justify-between py-2 border-b border-slate-50 dark:border-white/4 last:border-0">
                 <span className="text-sm text-slate-600 dark:text-slate-300">{em.action}</span>
                 <span className="text-sm font-mono font-bold text-brand-red">{em.multiplier}</span>
               </div>
@@ -117,7 +117,7 @@ export default function AlgorithmGuide() {
           <div className="space-y-2">
             {data.topPenalties.map((p, i) => (
               <div key={i} className="flex gap-2 text-sm text-slate-500 dark:text-slate-400">
-                <span className="text-red-500 flex-shrink-0 font-bold">!</span>
+                <span className="text-red-500 shrink-0 font-bold">!</span>
                 <span>{p}</span>
               </div>
             ))}

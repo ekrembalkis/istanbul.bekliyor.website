@@ -28,7 +28,7 @@ export default function PreviewMedia({
       className={`group relative w-full overflow-hidden rounded-[1.35rem] border text-left transition-all ${
         selected
           ? 'border-brand-red shadow-[0_14px_28px_rgba(227,10,23,0.18)]'
-          : 'border-black/[0.08] dark:border-white/[0.08]'
+          : 'border-black/8 dark:border-white/8'
       } ${className}`}
     >
       <div className={`relative ${aspectClass} bg-slate-950`}>
@@ -38,14 +38,14 @@ export default function PreviewMedia({
           className="absolute inset-0 h-full w-full object-cover"
           style={{ objectPosition: `${asset.focalX}% ${asset.focalY}%` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
 
         {showGuide && guideMode === 'profile' && (
-          <div className="pointer-events-none absolute inset-x-[12%] inset-y-[8%] rounded-[1rem] border border-white/70 border-dashed" />
+          <div className="pointer-events-none absolute inset-x-[12%] inset-y-[8%] rounded-2xl border border-white/70 border-dashed" />
         )}
 
         {showGuide && guideMode === 'reel' && (
-          <div className="pointer-events-none absolute inset-x-[18%] inset-y-[13%] rounded-[1rem] border border-white/70 border-dashed" />
+          <div className="pointer-events-none absolute inset-x-[18%] inset-y-[13%] rounded-2xl border border-white/70 border-dashed" />
         )}
 
         <div className="absolute left-3 top-3 flex items-center gap-2">

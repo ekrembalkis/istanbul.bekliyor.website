@@ -21,7 +21,7 @@ async function probeMonitor(username: string): Promise<CheckResult> {
       (m.username || m.xUsername || '').toLowerCase().trim() === target
     )
     if (existing) {
-      return { status: 'pass', detail: 'Mevcut monitor aktif — shadow ban yok', confidence: 95 }
+      return { status: 'pass', detail: 'Mevcut monitor aktif — shadow-sm ban yok', confidence: 95 }
     }
   } catch {
     // listMonitors failed (subscription, network) — continue to create attempt
@@ -31,14 +31,14 @@ async function probeMonitor(username: string): Promise<CheckResult> {
   try {
     const probe = await createMonitor(target)
     await deleteMonitor(probe.id)
-    return { status: 'pass', detail: 'Monitor probe basarili — shadow ban yok', confidence: 95 }
+    return { status: 'pass', detail: 'Monitor probe basarili — shadow-sm ban yok', confidence: 95 }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     const msgLower = msg.toLowerCase()
 
     // Shadow ban detected
-    if (msgLower.includes('shadow')) {
-      return { status: 'fail', detail: 'X shadow ban tespit etti', confidence: 95 }
+    if (msgLower.includes('shadow-sm')) {
+      return { status: 'fail', detail: 'X shadow-sm ban tespit etti', confidence: 95 }
     }
 
     // Account not found
@@ -56,7 +56,7 @@ async function probeMonitor(username: string): Promise<CheckResult> {
           (m.username || m.xUsername || '').toLowerCase().trim() === target
         )
         if (alreadyExists) {
-          return { status: 'pass', detail: 'Mevcut monitor aktif — shadow ban yok', confidence: 95 }
+          return { status: 'pass', detail: 'Mevcut monitor aktif — shadow-sm ban yok', confidence: 95 }
         }
 
         // Find a non-target monitor to temporarily free
@@ -70,12 +70,12 @@ async function probeMonitor(username: string): Promise<CheckResult> {
             const probe = await createMonitor(target)
             await deleteMonitor(probe.id)
             try { await createMonitor(savedUsername) } catch { /* best effort restore */ }
-            return { status: 'pass', detail: 'Monitor probe basarili — shadow ban yok', confidence: 95 }
+            return { status: 'pass', detail: 'Monitor probe basarili — shadow-sm ban yok', confidence: 95 }
           } catch (probeErr: unknown) {
             try { await createMonitor(savedUsername) } catch { /* best effort restore */ }
             const probeMsg = probeErr instanceof Error ? probeErr.message : String(probeErr)
-            if (probeMsg.toLowerCase().includes('shadow')) {
-              return { status: 'fail', detail: 'X shadow ban tespit etti', confidence: 95 }
+            if (probeMsg.toLowerCase().includes('shadow-sm')) {
+              return { status: 'fail', detail: 'X shadow-sm ban tespit etti', confidence: 95 }
             }
             return { status: 'error', detail: `Probe hatasi: ${probeMsg}`, confidence: 0 }
           }

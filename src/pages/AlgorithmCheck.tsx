@@ -67,7 +67,7 @@ export default function AlgorithmCheck() {
           {hasText ? (
             <>
               {/* Xquik Algorithm Score (11 checks) */}
-              <div className={`card rounded-2xl p-6 ${algoResult ? (algoResult.passed ? getScoreBg(100) : getScoreBg(algoScore)) : 'bg-slate-50 dark:bg-white/[0.03]'}`}>
+              <div className={`card rounded-2xl p-6 ${algoResult ? (algoResult.passed ? getScoreBg(100) : getScoreBg(algoScore)) : 'bg-slate-50 dark:bg-white/3'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 tracking-wider">ALGORITMA SKORU</label>
@@ -95,7 +95,7 @@ export default function AlgorithmCheck() {
                   <div className="space-y-2">
                     {algoResult.checklist.map((check, i) => (
                       <div key={i} className={`flex items-start gap-3 text-sm p-2.5 rounded-lg ${check.passed ? 'bg-emerald-50/50 dark:bg-emerald-500/5' : 'bg-red-50/50 dark:bg-red-500/5'}`}>
-                        <span className={`mt-0.5 text-xs flex-shrink-0 font-bold ${check.passed ? 'text-emerald-500' : 'text-red-500'}`}>
+                        <span className={`mt-0.5 text-xs shrink-0 font-bold ${check.passed ? 'text-emerald-500' : 'text-red-500'}`}>
                           {check.passed ? '✓' : '✕'}
                         </span>
                         <span className={check.passed ? 'text-slate-400' : 'text-slate-700 dark:text-slate-200 font-medium'}>{check.factor}</span>
@@ -130,7 +130,7 @@ export default function AlgorithmCheck() {
             </>
           ) : (
             <div className="card rounded-2xl p-16 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-white/[0.04] flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-white/4 flex items-center justify-center">
                 <svg className="w-8 h-8 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>

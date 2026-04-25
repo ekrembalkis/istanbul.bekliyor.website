@@ -591,7 +591,7 @@ export default function StyleClone() {
           <h1 className="text-2xl font-serif font-bold text-slate-800 dark:text-white">Stil Klonlama</h1>
         </div>
         <div className="card text-center py-20 px-6">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-white/[0.04] flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-white/4 flex items-center justify-center">
             <svg className="w-8 h-8 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
             </svg>
@@ -600,7 +600,7 @@ export default function StyleClone() {
           <div className="text-slate-400 text-sm mt-2 max-w-md mx-auto">
             Stil klonlama için <code className="chip text-brand-red">.env</code> dosyasına Xquik API key ekle.
           </div>
-          <div className="mt-6 bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 max-w-sm mx-auto text-left border border-slate-100 dark:border-white/[0.06]">
+          <div className="mt-6 bg-slate-50 dark:bg-white/3 rounded-xl p-4 max-w-sm mx-auto text-left border border-slate-100 dark:border-white/6">
             <code className="text-xs font-mono text-slate-500 dark:text-slate-400 leading-loose">
               VITE_XQUIK_API_KEY=xq_your_key_here
             </code>
@@ -620,7 +620,7 @@ export default function StyleClone() {
       </div>
 
       {/* Tab Nav */}
-      <div className="flex gap-1.5 border-b border-slate-200 dark:border-white/[0.06] pb-0">
+      <div className="flex gap-1.5 border-b border-slate-200 dark:border-white/6 pb-0">
         {([
           { key: 'analyze' as Tab, label: 'Profil Analizi', count: styles.length },
           { key: 'compose' as Tab, label: 'Tweet Üret' },
@@ -629,7 +629,7 @@ export default function StyleClone() {
           <button
             key={t.key}
             onClick={() => { setTab(t.key); setError('') }}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-[1px] ${
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${
               tab === t.key
                 ? 'border-brand-red text-brand-red'
                 : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-white'
@@ -681,7 +681,7 @@ export default function StyleClone() {
             </div>
             {deepProgress && (
               <div className="mt-3 flex items-center gap-2 text-xs text-blue-500 dark:text-blue-400">
-                <svg className="w-3 h-3 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" /><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" className="opacity-75" /></svg>
+                <svg className="w-3 h-3 animate-spin shrink-0" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" /><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" className="opacity-75" /></svg>
                 {deepProgress}
               </div>
             )}
@@ -745,7 +745,7 @@ export default function StyleClone() {
                   </div>
 
                   {userInfo?.description && (
-                    <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-3 mb-4 text-sm text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-white/[0.06]">
+                    <div className="bg-slate-50 dark:bg-white/3 rounded-xl p-3 mb-4 text-sm text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-white/6">
                       {userInfo.description}
                     </div>
                   )}
@@ -754,7 +754,7 @@ export default function StyleClone() {
                   {(currentStyle.tweets?.length ?? 0) > 0 ? (
                     <div className="space-y-2 max-h-72 overflow-y-auto">
                       {(currentStyle.tweets ?? []).map((tweet, i) => (
-                        <div key={tweet.id} className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-3 border border-slate-100 dark:border-white/[0.06]">
+                        <div key={tweet.id} className="bg-slate-50 dark:bg-white/3 rounded-xl p-3 border border-slate-100 dark:border-white/6">
                           <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">{tweet.text}</p>
                           <div className="text-[10px] text-slate-400 mt-1.5 font-mono">{tweet.createdAt ? new Date(tweet.createdAt).toLocaleDateString('tr-TR') : ''}</div>
                         </div>
@@ -770,7 +770,7 @@ export default function StyleClone() {
 
                   {/* Style analysis */}
                   {(currentStyle.tweets?.length ?? 0) > 0 && (
-                    <div className="mt-4 bg-slate-50 dark:bg-white/[0.03] rounded-xl p-4 border border-slate-100 dark:border-white/[0.06]">
+                    <div className="mt-4 bg-slate-50 dark:bg-white/3 rounded-xl p-4 border border-slate-100 dark:border-white/6">
                       <div className="text-[10px] font-bold text-slate-400 tracking-wider mb-2">STİL PROFİLİ</div>
                       <div className="grid grid-cols-2 gap-3 text-xs text-slate-500 dark:text-slate-400">
                         <div>
@@ -797,7 +797,7 @@ export default function StyleClone() {
 
               {!currentStyle && !analyzing && (
                 <div className="card p-12 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-white/[0.04] flex items-center justify-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-white/4 flex items-center justify-center">
                     <svg className="w-8 h-8 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                     </svg>
@@ -824,8 +824,8 @@ export default function StyleClone() {
                       key={style.xUsername}
                       className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
                         currentStyle?.xUsername === style.xUsername
-                          ? 'bg-brand-red/[0.05] dark:bg-brand-red/[0.08] border border-brand-red/15'
-                          : 'bg-slate-50 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.05]'
+                          ? 'bg-brand-red/5 dark:bg-brand-red/8 border border-brand-red/15'
+                          : 'bg-slate-50 dark:bg-white/3 hover:bg-slate-100 dark:hover:bg-white/5'
                       }`}
                       onClick={() => handleLoadStyle(style.xUsername)}
                     >
@@ -833,7 +833,7 @@ export default function StyleClone() {
                         {userCache[style.xUsername]?.profilePicture ? (
                           <img src={proxyImageUrl(userCache[style.xUsername].profilePicture)} alt="" className="w-8 h-8 rounded-full object-cover" />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/[0.08] flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                          <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/8 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
                             {style.xUsername[0]?.toUpperCase()}
                           </div>
                         )}
@@ -900,7 +900,7 @@ export default function StyleClone() {
 
         {/* News context banner when coming from Haber Servisi */}
         {newsData && (
-          <div className="card p-4 border-l-4 border-l-brand-red bg-brand-red/[0.03]">
+          <div className="card p-4 border-l-4 border-l-brand-red bg-brand-red/3">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-[10px] font-bold text-brand-red tracking-wider mb-1">HABERDEN TWEET ÜRET</div>
@@ -910,7 +910,7 @@ export default function StyleClone() {
                 )}
               </div>
               {newsData.url && (
-                <a href={newsData.url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 ml-4 px-3 py-1.5 text-[10px] font-medium text-brand-red bg-brand-red/[0.06] hover:bg-brand-red/[0.12] rounded-lg transition-colors">
+                <a href={newsData.url} target="_blank" rel="noopener noreferrer" className="shrink-0 ml-4 px-3 py-1.5 text-[10px] font-medium text-brand-red bg-brand-red/6 hover:bg-brand-red/12 rounded-lg transition-colors">
                   Kaynağa Git
                 </a>
               )}
@@ -927,7 +927,7 @@ export default function StyleClone() {
               <div className="text-[10px] font-bold text-slate-400 tracking-widest mb-4">ADIM 01 — YAPILANDIRMA</div>
               <div className="space-y-3">
                 {/* Mode tabs */}
-                <div className="flex gap-1 p-1 bg-slate-100 dark:bg-white/[0.04] rounded-lg">
+                <div className="flex gap-1 p-1 bg-slate-100 dark:bg-white/4 rounded-lg">
                   {([
                     { key: 'tweet' as const, label: 'Tweet' },
                     { key: 'quote' as const, label: 'Quote' },
@@ -939,7 +939,7 @@ export default function StyleClone() {
                       onClick={() => setComposeMode(m.key)}
                       className={`flex-1 text-[10px] py-1.5 rounded-md font-medium transition-all ${
                         composeMode === m.key
-                          ? 'bg-white dark:bg-dark-card text-slate-700 dark:text-white shadow-sm'
+                          ? 'bg-white dark:bg-dark-card text-slate-700 dark:text-white shadow-xs'
                           : 'text-slate-400 hover:text-slate-600'
                       }`}
                     >
@@ -965,13 +965,13 @@ export default function StyleClone() {
                             className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
                               isSelected
                                 ? 'bg-brand-red/10 border-brand-red/30 ring-2 ring-brand-red/20'
-                                : 'bg-slate-50 dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.15]'
+                                : 'bg-slate-50 dark:bg-white/3 border-slate-200 dark:border-white/8 hover:border-slate-300 dark:hover:border-white/15'
                             }`}
                           >
                             {pic ? (
                               <img src={proxyImageUrl(pic)} alt="" className="w-6 h-6 rounded-full object-cover" />
                             ) : (
-                              <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-white/[0.08] flex items-center justify-center text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                              <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-white/8 flex items-center justify-center text-[10px] font-bold text-slate-500 dark:text-slate-400">
                                 {s.xUsername[0]?.toUpperCase()}
                               </div>
                             )}
@@ -979,7 +979,7 @@ export default function StyleClone() {
                               <div className="flex items-center gap-1">
                                 <span className={`text-xs font-semibold ${isSelected ? 'text-brand-red' : 'text-slate-700 dark:text-slate-200'}`}>@{s.xUsername}</span>
                                 {library.find(e => e.username === s.xUsername)?.personalityDNA && (
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-purple-50 dark:bg-purple-500/10 text-purple-500 border border-purple-200 dark:border-purple-500/20 font-bold">DNA</span>
+                                  <span className="text-[8px] px-1 py-0.5 rounded-sm bg-purple-50 dark:bg-purple-500/10 text-purple-500 border border-purple-200 dark:border-purple-500/20 font-bold">DNA</span>
                                 )}
                               </div>
                               <div className="text-[10px] text-slate-400">{s.tweetCount} tweet</div>
@@ -1010,13 +1010,13 @@ export default function StyleClone() {
                       </button>
                     </div>
                     {quoteTweetText && (
-                      <div className="mt-2 p-3 bg-slate-50 dark:bg-white/[0.03] rounded-lg border border-slate-100 dark:border-white/[0.06] text-xs text-slate-500 dark:text-slate-400">
+                      <div className="mt-2 p-3 bg-slate-50 dark:bg-white/3 rounded-lg border border-slate-100 dark:border-white/6 text-xs text-slate-500 dark:text-slate-400">
                         <span className="font-semibold text-slate-600 dark:text-slate-300">@{quoteTweetAuthor}:</span> {quoteTweetText.substring(0, 150)}{quoteTweetText.length > 150 ? '...' : ''}
                       </div>
                     )}
 
                     {/* Viral tweet discovery */}
-                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
+                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/6">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[10px] font-bold text-slate-400 tracking-wider">VIRAL TWEET BUL</span>
                         <button
@@ -1027,14 +1027,14 @@ export default function StyleClone() {
                           {viralLoading ? 'Arıyor...' : 'Ara'}
                         </button>
                       </div>
-                      <div className="flex gap-0.5 bg-slate-100 dark:bg-white/[0.04] rounded-md p-0.5 mb-2">
+                      <div className="flex gap-0.5 bg-slate-100 dark:bg-white/4 rounded-md p-0.5 mb-2">
                         {TOPIC_CATEGORIES.map(cat => (
                           <button
                             key={cat.key}
                             onClick={() => { setViralCategory(cat.key); setViralTweets([]) }}
                             className={`flex-1 text-[9px] py-1 rounded transition-all ${
                               viralCategory === cat.key
-                                ? 'bg-white dark:bg-dark-card text-slate-700 dark:text-white shadow-sm font-medium'
+                                ? 'bg-white dark:bg-dark-card text-slate-700 dark:text-white shadow-xs font-medium'
                                 : 'text-slate-400 hover:text-slate-600'
                             }`}
                           >
@@ -1051,7 +1051,7 @@ export default function StyleClone() {
                       {viralTweets.length > 0 && (
                         <div className="space-y-1.5 max-h-64 overflow-y-auto">
                           {viralTweets.map(vt => (
-                            <div key={vt.id} className="bg-white dark:bg-dark-card rounded-lg p-2.5 border border-slate-100 dark:border-white/[0.06] hover:border-blue-200 dark:hover:border-blue-500/20 transition-colors group">
+                            <div key={vt.id} className="bg-white dark:bg-dark-card rounded-lg p-2.5 border border-slate-100 dark:border-white/6 hover:border-blue-200 dark:hover:border-blue-500/20 transition-colors group">
                               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-3">{vt.text}</p>
                               <div className="flex items-center justify-between mt-1.5">
                                 <div className="flex items-center gap-3 text-[10px] text-slate-400">
@@ -1083,14 +1083,14 @@ export default function StyleClone() {
                     <div className="flex items-center justify-between mb-1.5">
                       <label className="text-[10px] font-bold text-slate-400 tracking-wider">KONU</label>
                       <div className="flex items-center gap-2">
-                        <div className="flex gap-0.5 bg-slate-100 dark:bg-white/[0.04] rounded-md p-0.5">
+                        <div className="flex gap-0.5 bg-slate-100 dark:bg-white/4 rounded-md p-0.5">
                           {TOPIC_CATEGORIES.map(cat => (
                             <button
                               key={cat.key}
                               onClick={() => { setTopicCategory(cat.key); setTopicSuggestions([]); setExpandedTopic(null) }}
                               className={`text-[9px] px-1.5 py-0.5 rounded transition-all ${
                                 topicCategory === cat.key
-                                  ? 'bg-white dark:bg-dark-card text-slate-700 dark:text-white shadow-sm font-medium'
+                                  ? 'bg-white dark:bg-dark-card text-slate-700 dark:text-white shadow-xs font-medium'
                                   : 'text-slate-400 hover:text-slate-600'
                               }`}
                             >
@@ -1126,7 +1126,7 @@ export default function StyleClone() {
                               }${
                                 s.source === 'campaign' ? 'bg-brand-red/10 text-brand-red border-brand-red/20' :
                                 s.source === 'live' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20' :
-                                'bg-slate-50 dark:bg-white/[0.04] text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/[0.08]'
+                                'bg-slate-50 dark:bg-white/4 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/8'
                               }`}
                               title={s.reason}
                             >
@@ -1144,7 +1144,7 @@ export default function StyleClone() {
                         </div>
                         {/* Expanded topic tweet cards */}
                         {expandedTopic !== null && topicSuggestions[expandedTopic]?.tweets && topicSuggestions[expandedTopic].tweets!.length > 0 && (
-                          <div className="bg-slate-50 dark:bg-white/[0.02] rounded-xl border border-slate-100 dark:border-white/[0.06] p-3 space-y-2 animate-fade-in">
+                          <div className="bg-slate-50 dark:bg-white/2 rounded-xl border border-slate-100 dark:border-white/6 p-3 space-y-2 animate-fade-in">
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold text-slate-400 tracking-wider">
                                 {topicSuggestions[expandedTopic].title}
@@ -1152,7 +1152,7 @@ export default function StyleClone() {
                               <button onClick={() => setExpandedTopic(null)} className="text-slate-400 hover:text-slate-600 text-xs">✕</button>
                             </div>
                             {topicSuggestions[expandedTopic].tweets!.map((tw, ti) => (
-                              <div key={ti} className="bg-white dark:bg-dark-card rounded-lg p-3 border border-slate-100 dark:border-white/[0.06]">
+                              <div key={ti} className="bg-white dark:bg-dark-card rounded-lg p-3 border border-slate-100 dark:border-white/6">
                                 <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">{tw.text}</p>
                                 <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-400">
                                   {tw.author && <span className="font-medium">@{tw.author}</span>}
@@ -1427,13 +1427,13 @@ export default function StyleClone() {
                         {/* Thread chain line + number */}
                         {isThread && (
                           <>
-                            <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-200 dark:bg-white/[0.08]" />
+                            <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-200 dark:bg-white/8" />
                             <div className={`absolute left-0 top-4 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold z-10 ${
                               i === 0
                                 ? 'bg-brand-red text-white'
                                 : displayPassed
                                   ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30'
-                                  : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/[0.1]'
+                                  : 'bg-slate-100 dark:bg-white/6 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/10'
                             }`}>
                               {i + 1}
                             </div>
@@ -1442,7 +1442,7 @@ export default function StyleClone() {
                         <div className={`${isThread ? 'py-3' : ''} ${!isThread ? `p-4 rounded-xl border ${
                           displayPassed
                             ? 'bg-emerald-50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20'
-                            : 'bg-slate-50 dark:bg-white/[0.03] border-slate-100 dark:border-white/[0.06]'
+                            : 'bg-slate-50 dark:bg-white/3 border-slate-100 dark:border-white/6'
                         }` : ''}`}>
                           <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-line">{gt.tweet}</p>
                           <div className="flex items-center justify-between mt-1.5">
@@ -1453,18 +1453,18 @@ export default function StyleClone() {
                                 </span>
                               )}
                               {isStylePass && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/[0.06] text-slate-400">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-slate-100 dark:bg-white/6 text-slate-400">
                                   stil uyumu
                                 </span>
                               )}
                               <span className="text-[10px] text-slate-400">{gt.tweet.length} chr</span>
                               {gt.styleMatch != null && (
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${gt.styleMatch >= 80 ? 'bg-emerald-500/10 text-emerald-500' : gt.styleMatch >= 60 ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'}`}>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${gt.styleMatch >= 80 ? 'bg-emerald-500/10 text-emerald-500' : gt.styleMatch >= 60 ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'}`}>
                                   stil {gt.styleMatch}%
                                 </span>
                               )}
                               {isThread && i === 0 && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-brand-red/10 text-brand-red font-medium">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-brand-red/10 text-brand-red font-medium">
                                   hook
                                 </span>
                               )}
@@ -1521,7 +1521,7 @@ export default function StyleClone() {
                   { n: '04', t: 'Otomatik üret', d: '11 kontrol testi ile skorlanmış tweetler' },
                 ].map(s => (
                   <div key={s.n} className="flex gap-3 items-start p-2">
-                    <span className="w-6 h-6 rounded-md bg-brand-red/10 text-brand-red text-[10px] font-bold flex items-center justify-center flex-shrink-0">{s.n}</span>
+                    <span className="w-6 h-6 rounded-md bg-brand-red/10 text-brand-red text-[10px] font-bold flex items-center justify-center shrink-0">{s.n}</span>
                     <div>
                       <div className="text-xs font-medium text-slate-700 dark:text-slate-200">{s.t}</div>
                       <div className="text-[10px] text-slate-400">{s.d}</div>
@@ -1670,7 +1670,7 @@ function StyleReference({ username, styles }: { username: string; styles: StyleP
   return (
     <div className="space-y-2 max-h-48 overflow-y-auto">
       {style.tweets.slice(0, 5).map((tweet) => (
-        <div key={tweet.id} className="bg-slate-50 dark:bg-white/[0.03] rounded-lg p-2.5 text-xs text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-white/[0.06]">
+        <div key={tweet.id} className="bg-slate-50 dark:bg-white/3 rounded-lg p-2.5 text-xs text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-white/6">
           {tweet.text}
         </div>
       ))}
