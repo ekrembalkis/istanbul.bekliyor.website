@@ -22,11 +22,15 @@ const DEFAULT_TIMEOUT_MS = 30_000
 const RETRY_STATUS = new Set([429, 500, 502, 503, 504])
 
 // Gemini 3.x best-practice: temperature stays at 1.0; tune diversity via topP/topK.
+// thinkingLevel='low' is the default — Gemini 3 models otherwise burn the
+// maxOutputTokens budget on hidden reasoning before emitting any visible text.
+// Endpoints that genuinely need synthesis pass thinkingLevel='medium' explicitly.
 const DEFAULT_GEN_CONFIG = {
   temperature: 1.0,
   topP: 0.95,
   topK: 40,
 }
+const DEFAULT_THINKING_LEVEL = 'low'
 
 // Politik kampanya içeriği için makul gevşetme — Gemini'nin default safety
 // filtreleri "tutuklu siyasetçi" gibi içerikleri yutuyor.
@@ -97,6 +101,9 @@ export async function geminiGenerate(opts) {
     ...DEFAULT_GEN_CONFIG,
     maxOutputTokens: 2048,
     ...opts.generationConfigOverrides,
+    thinkingConfig: {
+      thinkingLevel: opts.thinkingLevel || DEFAULT_THINKING_LEVEL,
+    },
   }
   if (opts.responseJsonSchema) {
     generationConfig.responseMimeType = 'application/json'
