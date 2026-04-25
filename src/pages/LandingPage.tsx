@@ -113,7 +113,7 @@ function HeroQuote() {
         >
           B
         </span>
-        ir hak, yalnızca herkes için savunulduğunda haktır. Hukukun susturulduğu yerde, sessizlik suç ortağı olur — ve biz sessiz kalmayı reddediyoruz.
+        ir hak, yalnızca herkes için savunulduğunda haktır. Hukukun susturulduğu yerde sessizlik suç ortağı olur; biz suç ortağı olmayı reddediyoruz.
       </blockquote>
       <cite className="block mt-7 not-italic editorial-mono text-ink-muted">
         —&nbsp;&nbsp;Bildirgeden, Madde I
