@@ -1,39 +1,143 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useRef, useState, useCallback, type ReactElement } from 'react'
+import {
+  applyThemeWithTransition,
+  getStoredTheme,
+  watchSystem,
+  type ThemeChoice,
+} from '../lib/theme'
 
-export function ThemeToggle() {
-  const [dark, setDark] = useState(() => {
-    if (typeof window === 'undefined') return false
-    const stored = localStorage.getItem('theme')
-    if (stored) return stored === 'dark'
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-  })
+const OPTIONS: { value: ThemeChoice; label: string; icon: ReactElement }[] = [
+  {
+    value: 'light',
+    label: 'Aydınlık tema',
+    icon: (
+      <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+        <circle cx="12" cy="12" r="4" fill="currentColor" />
+        <g stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+          <line x1="12" y1="2.5" x2="12" y2="5" />
+          <line x1="12" y1="19" x2="12" y2="21.5" />
+          <line x1="2.5" y1="12" x2="5" y2="12" />
+          <line x1="19" y1="12" x2="21.5" y2="12" />
+          <line x1="5.2" y1="5.2" x2="6.9" y2="6.9" />
+          <line x1="17.1" y1="17.1" x2="18.8" y2="18.8" />
+          <line x1="5.2" y1="18.8" x2="6.9" y2="17.1" />
+          <line x1="17.1" y1="6.9" x2="18.8" y2="5.2" />
+        </g>
+      </svg>
+    ),
+  },
+  {
+    value: 'system',
+    label: 'Sistem teması',
+    icon: (
+      <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+        <rect x="3.5" y="4.5" width="17" height="12" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        <line x1="8" y1="20" x2="16" y2="20" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <line x1="12" y1="16.5" x2="12" y2="20" stroke="currentColor" strokeWidth="1.6" />
+      </svg>
+    ),
+  },
+  {
+    value: 'dark',
+    label: 'Karanlık tema',
+    icon: (
+      <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+        <path d="M20.5 14.5A8 8 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z" fill="currentColor" />
+      </svg>
+    ),
+  },
+]
+
+export function ThemeToggle({ className = '' }: { className?: string }) {
+  const [choice, setChoice] = useState<ThemeChoice>(() =>
+    typeof window === 'undefined' ? 'system' : getStoredTheme(),
+  )
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([])
 
   useEffect(() => {
-    const root = document.documentElement
-    if (dark) {
-      root.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
-    } else {
-      root.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
+    return watchSystem(() => {
+      /* attribute updated by watcher; React state stays on 'system' */
+    })
+  }, [])
+
+  const select = useCallback(
+    (next: ThemeChoice, originEl: HTMLElement) => {
+      if (next === choice) return
+      const rect = originEl.getBoundingClientRect()
+      applyThemeWithTransition(
+        next,
+        { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+        () => setChoice(next),
+      )
+    },
+    [choice],
+  )
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const idx = OPTIONS.findIndex(o => o.value === choice)
+    let nextIdx = -1
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        nextIdx = (idx + 1) % OPTIONS.length
+        break
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        nextIdx = (idx - 1 + OPTIONS.length) % OPTIONS.length
+        break
+      case 'Home':
+        nextIdx = 0
+        break
+      case 'End':
+        nextIdx = OPTIONS.length - 1
+        break
+      default:
+        return
     }
-  }, [dark])
+    e.preventDefault()
+    const target = buttonRefs.current[nextIdx]
+    if (target) {
+      target.focus()
+      select(OPTIONS[nextIdx].value, target)
+    }
+  }
 
   return (
-    <button
-      onClick={() => setDark(!dark)}
-      className="p-2 rounded-lg border border-black/[0.06] dark:border-white/[0.08] hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-all"
-      title={dark ? 'Açık temaya geç' : 'Koyu temaya geç'}
+    <div
+      role="radiogroup"
+      aria-label="Tema seçimi"
+      onKeyDown={onKeyDown}
+      className={
+        'inline-flex items-center gap-0.5 p-[3px] rounded-full border border-rule bg-paper/40 backdrop-blur-[2px] ' +
+        className
+      }
     >
-      {dark ? (
-        <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      ) : (
-        <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-        </svg>
-      )}
-    </button>
+      {OPTIONS.map((opt, i) => {
+        const active = choice === opt.value
+        return (
+          <button
+            key={opt.value}
+            ref={el => {
+              buttonRefs.current[i] = el
+            }}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            aria-label={opt.label}
+            tabIndex={active ? 0 : -1}
+            onClick={e => select(opt.value, e.currentTarget)}
+            className={
+              'relative flex items-center justify-center w-7 h-7 rounded-full transition-colors ' +
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ' +
+              (active
+                ? 'bg-accent text-white'
+                : 'text-ink-muted hover:text-ink hover:bg-paper/60')
+            }
+          >
+            {opt.icon}
+          </button>
+        )
+      })}
+    </div>
   )
 }
