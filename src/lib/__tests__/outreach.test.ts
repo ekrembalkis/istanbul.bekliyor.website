@@ -60,9 +60,23 @@ describe('buildXIntentUrl', () => {
   })
 })
 
-describe('TBMM_CONTACT_URL', () => {
-  it('mirrors the SITE config (no separate hardcode)', () => {
+describe('TBMM URLs', () => {
+  it('TBMM_CONTACT_URL mirrors the SITE config', () => {
     expect(TBMM_CONTACT_URL).toBe(SITE.tbmmContactUrl)
     expect(TBMM_CONTACT_URL.startsWith('https://')).toBe(true)
+  })
+
+  it('uses /Sayfa/Iletisim (capitalised) — /iletisim returns blank', () => {
+    expect(TBMM_CONTACT_URL).toContain('/Sayfa/Iletisim')
+  })
+
+  it('e-Dilekçe URL is the citizen petition portal', () => {
+    expect(SITE.tbmmEDilekceUrl).toContain('edilekce.tbmm.gov.tr')
+    expect(SITE.tbmmEDilekceUrl.startsWith('https://')).toBe(true)
+  })
+
+  it('deputy-search URL points at TBMM milletvekili-arama form', () => {
+    expect(SITE.tbmmDeputySearchUrl).toContain('milletvekili-arama')
+    expect(SITE.tbmmDeputySearchUrl.startsWith('https://')).toBe(true)
   })
 })

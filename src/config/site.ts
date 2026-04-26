@@ -11,7 +11,15 @@ export const SITE = {
   xProfileUrl: 'https://x.com/istbekliyor',
   xIntentBase: 'https://x.com/intent/tweet',
   publicHost: 'istanbulbekliyor.com',
-  tbmmContactUrl: 'https://www.tbmm.gov.tr/iletisim',
+  // /iletisim (lowercase) returns a blank page; /Sayfa/Iletisim (capitalised)
+  // is the actual TBMM contact landing page.
+  tbmmContactUrl: 'https://www.tbmm.gov.tr/Sayfa/Iletisim',
+  // E-Dilekçe — practical citizen petition portal (real form, accepts text +
+  // attachments). The closest thing TBMM offers to a usable contact form.
+  tbmmEDilekceUrl: 'https://edilekce.tbmm.gov.tr/',
+  // Deputy search by name/province/party — for citizens who want to find
+  // a specific deputy and reach them through their personal page.
+  tbmmDeputySearchUrl: 'https://www.tbmm.gov.tr/milletvekili-arama/form',
 } as const
 
 // Paper-grain noise overlay (encoded once, referenced by background-image).

@@ -70,7 +70,7 @@ export default function OutreachPage() {
                 className="font-serif italic text-ink mt-8 max-w-[44ch]"
                 style={{ fontSize: 'clamp(20px, 1.8vw, 26px)', lineHeight: 1.4 }}
               >
-                Türkiye Büyük Millet Meclisi'nde {totalSeats} milletvekili var. {day}. günde sesinizi onlara duyurmak için ilinizi seçin: hazır mektup, X'te tek tık, TBMM iletişim formu.
+                Türkiye Büyük Millet Meclisi'nde {totalSeats} milletvekili var. {day}. günde sesinizi onlara duyurmak için ilinizi seçin: hazır mektup, X'te tek tık, TBMM e-Dilekçe portalı.
               </p>
             </div>
 
@@ -116,7 +116,8 @@ export default function OutreachPage() {
                 <li>İlini seç. O ilin milletvekili sayısı YSK kararıyla doğrulanmış.</li>
                 <li>Üç hazır şablondan birini seç ya da kendi mesajını yaz.</li>
                 <li><strong>X'te paylaş</strong>: tweet metniyle X açılır, sen yayınlarsın.</li>
-                <li><strong>TBMM'ye Yaz</strong>: uzun mektup panoya kopyalanır, resmi iletişim formu yeni sekmede açılır.</li>
+                <li><strong>E-Dilekçe Gönder</strong>: uzun mektup panoya kopyalanır, TBMM e-Dilekçe portalı yeni sekmede açılır — yapıştırıp gönderirsin.</li>
+                <li><strong>Vekili Bul</strong>: TBMM vekil arama formunda ilini ve partiyi süzgeçleyerek tek tek vekil sayfasına ulaşır, kişisel kanaldan iletirsin.</li>
               </ol>
               <p
                 className="font-serif italic text-ink-muted mt-6 border-l-2 border-accent pl-4"

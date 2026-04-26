@@ -10,7 +10,8 @@ import {
   buildXIntentUrl,
   composeLongMessage,
   composeShortMessage,
-  TBMM_CONTACT_URL,
+  TBMM_DEPUTY_SEARCH_URL,
+  TBMM_EDILEKCE_URL,
 } from '../../lib/outreach'
 import { findCityByName, type City } from '../../data/cities'
 import { seatsForPlate } from '../../data/deputies'
@@ -63,11 +64,16 @@ export function OutreachForm() {
     window.open(buildXIntentUrl(shortText), '_blank', 'noopener,noreferrer')
   }
 
-  function onOpenTbmm() {
+  function onOpenEDilekce() {
     if (!longText.trim()) return
-    // Copy long version to clipboard so the user can paste it into TBMM form.
+    // Copy long version to clipboard so the user can paste it into the
+    // e-Dilekçe form once it loads in the new tab.
     navigator.clipboard?.writeText(longText).catch(() => null)
-    window.open(TBMM_CONTACT_URL, '_blank', 'noopener,noreferrer')
+    window.open(TBMM_EDILEKCE_URL, '_blank', 'noopener,noreferrer')
+  }
+
+  function onOpenDeputySearch() {
+    window.open(TBMM_DEPUTY_SEARCH_URL, '_blank', 'noopener,noreferrer')
   }
 
   const ready = Boolean(city && seats !== null && shortText.trim())
@@ -180,16 +186,24 @@ export function OutreachForm() {
             </button>
             <button
               type="button"
-              onClick={onOpenTbmm}
+              onClick={onOpenEDilekce}
               disabled={!ready}
               className="editorial-mono px-6 py-3 border border-rule text-ink hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
               style={{ letterSpacing: '0.22em' }}
             >
-              TBMM'YE YAZ (KOPYALA + AÇ)
+              E-DİLEKÇE GÖNDER
+            </button>
+            <button
+              type="button"
+              onClick={onOpenDeputySearch}
+              className="editorial-mono px-6 py-3 border border-rule text-ink hover:border-accent hover:text-accent transition-colors"
+              style={{ letterSpacing: '0.22em' }}
+            >
+              VEKİLİ BUL
             </button>
           </div>
-          <p className="font-serif italic text-ink-muted mt-3" style={{ fontSize: 13 }}>
-            "TBMM'ye Yaz" uzun versiyonu panoya kopyalar ve resmi iletişim formunu yeni sekmede açar — formu doldururken yapıştırın.
+          <p className="font-serif italic text-ink-muted mt-3" style={{ fontSize: 13, lineHeight: 1.55 }}>
+            <strong>E-Dilekçe Gönder</strong>: uzun mektup panoya kopyalanır, TBMM'nin resmi e-Dilekçe portalı yeni sekmede açılır — yapıştırıp gönderin. <strong>Vekili Bul</strong>: TBMM'nin vekil arama formunda ilini ve partiyi süzgeçleyerek tek tek vekil sayfasına ulaşırsın.
           </p>
         </div>
       )}

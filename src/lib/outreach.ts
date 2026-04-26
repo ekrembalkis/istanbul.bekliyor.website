@@ -53,6 +53,8 @@ export function buildXIntentUrl(text: string): string {
   return `${SITE.xIntentBase}?text=${encodeURIComponent(text)}`
 }
 
-// TBMM contact URL is owned by SITE config (see config/site.ts).
+// TBMM URLs are owned by SITE config (see config/site.ts).
 // Re-export for ergonomic call-sites that don't otherwise import SITE.
 export const TBMM_CONTACT_URL = SITE.tbmmContactUrl
+export const TBMM_EDILEKCE_URL = SITE.tbmmEDilekceUrl
+export const TBMM_DEPUTY_SEARCH_URL = SITE.tbmmDeputySearchUrl
