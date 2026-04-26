@@ -3,15 +3,15 @@ import { geoMercator, geoPath } from 'd3-geo'
 import { feature } from 'topojson-client'
 import type { Topology } from 'topojson-specification'
 import type { FeatureCollection, Feature, Geometry } from 'geojson'
-import topology from '../../data/tr-iller.topo.json'
 import type { ProvinceAggregation } from '../../lib/provinces'
 import { colorForCount } from '../../lib/provinces'
 
 const VIEWBOX_WIDTH = 1000
-const VIEWBOX_HEIGHT = 562 // 16:9
+const VIEWBOX_HEIGHT = 562
+const ASPECT_RATIO = VIEWBOX_WIDTH / VIEWBOX_HEIGHT
+const TOPOJSON_URL = '/tr-iller.topo.json'
 
 type ProvinceProps = { name: string; plate: number; slug: string }
-type ProvinceFeature = Feature<Geometry, ProvinceProps>
 
 type Props = {
   aggregation: ProvinceAggregation
@@ -19,17 +19,47 @@ type Props = {
   onSelect: (plate: number | null) => void
 }
 
+type LoadState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ready'; topology: Topology }
+
 export function TurkeyChoropleth({ aggregation, selectedPlate, onSelect }: Props) {
+  const [load, setLoad] = useState<LoadState>({ status: 'loading' })
   const [hovered, setHovered] = useState<{ plate: number; x: number; y: number } | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
 
-  // Compute features + projected paths once. TopoJSON parsing is cheap but
-  // d3-geoPath on 81 features is a few KB of math we don't want to redo.
-  const { features, pathFor, max } = useMemo(() => {
-    const fc = feature(
-      topology as unknown as Topology,
-      (topology as unknown as Topology).objects.iller,
-    ) as unknown as FeatureCollection<Geometry, ProvinceProps>
+  // Runtime fetch of the topojson asset. Bypasses Vite's JSON transform
+  // entirely — gets a fresh fetch + JSON.parse, no bundler-specific quirks.
+  useEffect(() => {
+    let cancelled = false
+    fetch(TOPOJSON_URL)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
+      .then((topology: Topology) => {
+        if (cancelled) return
+        if (topology?.type !== 'Topology' || !topology.objects?.iller) {
+          throw new Error('Topology shape invalid')
+        }
+        setLoad({ status: 'ready', topology })
+      })
+      .catch((err: Error) => {
+        if (cancelled) return
+        setLoad({ status: 'error', message: err.message.slice(0, 100) })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const computed = useMemo(() => {
+    if (load.status !== 'ready') return null
+    const t = load.topology
+    const obj = t.objects.iller
+    const fc = feature(t, obj) as unknown as FeatureCollection<Geometry, ProvinceProps>
+    if (!fc?.features?.length) return null
 
     const projection = geoMercator().fitSize([VIEWBOX_WIDTH, VIEWBOX_HEIGHT], fc)
     const pathFor = geoPath(projection)
@@ -39,22 +69,17 @@ export function TurkeyChoropleth({ aggregation, selectedPlate, onSelect }: Props
       if (stats.count > max) max = stats.count
     }
     return { features: fc.features, pathFor, max }
-  }, [aggregation])
+  }, [load, aggregation])
 
-  // Track hover position for the popover. Using clientX/Y relative to the SVG
-  // viewport is enough because the popover is positioned absolutely inside
-  // the same wrapper.
   function handleMove(plate: number, evt: React.MouseEvent | React.FocusEvent) {
     const rect = svgRef.current?.getBoundingClientRect()
     if (!rect) return
-    const e = 'clientX' in evt ? evt : null
-    if (e) {
-      setHovered({ plate, x: e.clientX - rect.left, y: e.clientY - rect.top })
-    } else {
-      // Keyboard focus — anchor at province centroid.
-      const f = features.find(g => g.properties.plate === plate)
+    if ('clientX' in evt) {
+      setHovered({ plate, x: evt.clientX - rect.left, y: evt.clientY - rect.top })
+    } else if (computed) {
+      const f = computed.features.find(g => g.properties.plate === plate)
       if (!f) return
-      const c = pathFor.centroid(f as Feature<Geometry, ProvinceProps>)
+      const c = computed.pathFor.centroid(f as Feature<Geometry, ProvinceProps>)
       const scaleX = rect.width / VIEWBOX_WIDTH
       const scaleY = rect.height / VIEWBOX_HEIGHT
       setHovered({ plate, x: c[0] * scaleX, y: c[1] * scaleY })
@@ -66,79 +91,94 @@ export function TurkeyChoropleth({ aggregation, selectedPlate, onSelect }: Props
     onSelect(selectedPlate === plate ? null : plate)
   }
 
+  // Visible runtime status surfaced inside the figure (not console) so the
+  // user can see exactly what state the chunk is in without opening devtools.
+  const statusBadge = (() => {
+    if (load.status === 'loading') return '— Harita yükleniyor —'
+    if (load.status === 'error') return `— Harita yüklenemedi: ${load.message} —`
+    if (!computed) return '— Harita verisi geçersiz —'
+    return null
+  })()
+
   return (
     <figure
       className="relative w-full"
-      style={{ aspectRatio: `${VIEWBOX_WIDTH}/${VIEWBOX_HEIGHT}` }}
+      style={{ aspectRatio: ASPECT_RATIO }}
     >
-      <svg
-        ref={svgRef}
-        viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
-        role="img"
-        aria-label="Türkiye il bazlı tutuklu yoğunluk haritası"
-        className="w-full h-full"
-        onMouseLeave={() => setHovered(null)}
-      >
-        <g>
-          {features.map(f => {
-            const plate = f.properties.plate
-            const stats = aggregation.byPlate.get(plate)
-            const count = stats?.count ?? 0
-            const fill = colorForCount(count, max)
-            const isSelected = selectedPlate === plate
-            const interactive = count > 0
-            const d = pathFor(f as Feature<Geometry, ProvinceProps>) ?? ''
-            return (
-              <path
-                key={plate}
-                d={d}
-                fill={fill}
-                stroke={isSelected ? 'var(--accent)' : 'rgba(20, 18, 16, 0.55)'}
-                strokeWidth={isSelected ? 3.5 : 1.5}
-                strokeLinejoin="round"
-                vectorEffect="non-scaling-stroke"
-                style={pathStyle(interactive, isSelected)}
-                tabIndex={interactive ? 0 : -1}
-                role={interactive ? 'button' : 'presentation'}
-                aria-label={
-                  interactive
-                    ? `${f.properties.name} — ${count} tutsak — profili aç`
-                    : `${f.properties.name} — kayıt yok`
-                }
-                onMouseEnter={evt => handleMove(plate, evt)}
-                onMouseMove={evt => handleMove(plate, evt)}
-                onFocus={evt => handleMove(plate, evt)}
-                onBlur={() => setHovered(null)}
-                onClick={() => handleClick(plate, count)}
-                onKeyDown={evt => {
-                  if (evt.key === 'Enter' || evt.key === ' ') {
-                    evt.preventDefault()
-                    handleClick(plate, count)
+      {statusBadge ? (
+        <div
+          className="absolute inset-0 flex items-center justify-center editorial-mono text-ink-muted opacity-70"
+          style={{ background: 'rgba(20, 18, 16, 0.04)' }}
+        >
+          {statusBadge}
+        </div>
+      ) : (
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
+          preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-label="Türkiye il bazlı tutuklu yoğunluk haritası"
+          style={{ display: 'block', width: '100%', height: '100%' }}
+          onMouseLeave={() => setHovered(null)}
+        >
+          <g>
+            {computed!.features.map(f => {
+              const plate = f.properties.plate
+              const stats = aggregation.byPlate.get(plate)
+              const count = stats?.count ?? 0
+              const fill = colorForCount(count, computed!.max)
+              const isSelected = selectedPlate === plate
+              const interactive = count > 0
+              const d = computed!.pathFor(f as Feature<Geometry, ProvinceProps>) ?? ''
+              return (
+                <path
+                  key={plate}
+                  d={d}
+                  fill={fill}
+                  stroke={isSelected ? 'var(--accent)' : 'rgba(20, 18, 16, 0.55)'}
+                  strokeWidth={isSelected ? 3.5 : 1.5}
+                  strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
+                  style={pathStyle(interactive, isSelected)}
+                  tabIndex={interactive ? 0 : -1}
+                  role={interactive ? 'button' : 'presentation'}
+                  aria-label={
+                    interactive
+                      ? `${f.properties.name} — ${count} tutsak — profili aç`
+                      : `${f.properties.name} — kayıt yok`
                   }
-                }}
-              >
-                <title>
-                  {f.properties.name} — {count}
-                </title>
-              </path>
-            )
-          })}
-        </g>
-      </svg>
+                  onMouseEnter={evt => handleMove(plate, evt)}
+                  onMouseMove={evt => handleMove(plate, evt)}
+                  onFocus={evt => handleMove(plate, evt)}
+                  onBlur={() => setHovered(null)}
+                  onClick={() => handleClick(plate, count)}
+                  onKeyDown={evt => {
+                    if (evt.key === 'Enter' || evt.key === ' ') {
+                      evt.preventDefault()
+                      handleClick(plate, count)
+                    }
+                  }}
+                >
+                  <title>
+                    {f.properties.name} — {count}
+                  </title>
+                </path>
+              )
+            })}
+          </g>
+        </svg>
+      )}
 
-      {hovered && <ChoroplethTooltip aggregation={aggregation} hovered={hovered} />}
+      {hovered && computed && <ChoroplethTooltip aggregation={aggregation} hovered={hovered} />}
     </figure>
   )
 }
 
-function pathStyle(interactive: boolean, selected: boolean): CSSProperties {
+function pathStyle(interactive: boolean, _selected: boolean): CSSProperties {
   return {
     cursor: interactive ? 'pointer' : 'default',
     outline: 'none',
-    transition: 'fill 160ms ease, stroke 160ms ease',
-    filter: selected
-      ? 'drop-shadow(0 0 8px color-mix(in oklab, var(--accent) 40%, transparent))'
-      : undefined,
   }
 }
 
@@ -168,4 +208,3 @@ function ChoroplethTooltip({
     </div>
   )
 }
-

@@ -33,7 +33,8 @@ const config = JSON.parse(
 )
 const SOURCE_URL = process.env.TR_GEOJSON_URL || config.sourceUrl
 const SIMPLIFY_PERCENT = process.env.TR_SIMPLIFY_PERCENT || config.simplifyPercent
-const OUT_PATH = resolve(REPO_ROOT, config.outRelative)
+const OUT_PATHS = (Array.isArray(config.outRelative) ? config.outRelative : [config.outRelative])
+  .map(rel => resolve(REPO_ROOT, rel))
 const EXPECTED_FEATURES = config.expectedFeatureCount
 
 // Build scripts log progress to stdout — this is their output contract,
@@ -130,10 +131,12 @@ const topo = topology({ iller: simplified }, 1e5)
 const topoStr = JSON.stringify(topo)
 log(`     topojson:   ${(topoStr.length / 1024).toFixed(1)} KB`)
 
-log('5/5 Writing output...')
-await writeFile(OUT_PATH, topoStr, 'utf8')
-log(`     wrote: ${OUT_PATH}`)
+log('5/5 Writing output(s)...')
+for (const p of OUT_PATHS) {
+  await writeFile(p, topoStr, 'utf8')
+  log(`     wrote: ${p}`)
+}
 log(`     size:  ${(topoStr.length / 1024).toFixed(1)} KB`)
 log(`     reduction: ${((1 - topoStr.length / rawSize) * 100).toFixed(1)}%`)
 
-log('Done. Commit the output: git add src/data/tr-iller.topo.json')
+log(`Done. Commit the outputs: git add ${OUT_PATHS.map(p => p.replace(REPO_ROOT + '\\', '').replace(REPO_ROOT + '/', '')).join(' ')}`)
