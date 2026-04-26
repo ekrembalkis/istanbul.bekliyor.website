@@ -131,13 +131,19 @@ function HeroSection({ day }: { day: number }) {
         <HeroQuote />
       </div>
 
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-6 flex items-center gap-8 editorial-mono">
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 editorial-mono">
         <span className="text-ink-muted opacity-60">↓ AŞAĞI</span>
         <Link
           to="/kart"
           className="text-accent border-b border-current hover:text-ink transition-colors pb-[2px]"
         >
           → KARTINI ÜRET
+        </Link>
+        <Link
+          to="/vekiline-yaz"
+          className="text-accent border-b border-current hover:text-ink transition-colors pb-[2px]"
+        >
+          → VEKİLİNE YAZ
         </Link>
       </div>
     </section>

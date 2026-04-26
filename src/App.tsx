@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import LandingPage from './pages/LandingPage'
 import DetaineeProfilePage from './pages/DetaineeProfilePage'
 import ManifestoPage from './pages/ManifestoPage'
+import OutreachPage from './pages/OutreachPage'
 import NotFoundPage from './pages/NotFoundPage'
 import { EditorialLoading } from './components/public/EditorialLoading'
 
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/tutuklu/:slug" element={<DetaineeProfilePage />} />
         <Route path="/bildirge" element={<ManifestoPage />} />
+        <Route path="/vekiline-yaz" element={<OutreachPage />} />
         <Route
           path="/kart"
           element={
