@@ -121,22 +121,34 @@ if (allPlates.size !== EXPECTED_FEATURES) {
   throw new Error(`Plate uniqueness check failed: ${allPlates.size} unique`)
 }
 
-log(`3/5 Mapshaper simplify (Visvalingam ${SIMPLIFY_PERCENT}, keep-shapes, clean)...`)
-// `-clean` after simplification fixes the slivers and gaps that pure
-// per-polygon simplification creates between provinces. Without it, shared
-// borders simplify independently and you see hairline white gaps between
-// neighbouring il polygons in the rendered choropleth.
+log('3/5 Topology-first simplify pipeline...')
+// Pipeline ordering matters for shared-border preservation. Earlier we
+// simplified GeoJSON first then converted to TopoJSON — even though
+// mapshaper auto-builds internal topology, the seam between mapshaper's
+// internal model and topojson-server's re-build introduced micro-gaps
+// (visible as hairline slivers between adjacent provinces).
+//
+// New order:
+//   a) Build TopoJSON from raw enriched GeoJSON — shared arcs are now
+//      explicit, single-instance objects in the topology.
+//   b) Hand the TopoJSON straight to mapshaper. Simplify operates on the
+//      arcs themselves: each shared arc is simplified ONCE, so neighbour
+//      provinces stay perfectly stitched.
+//   c) snap to merge near-coincident vertices (catches floating-point
+//      drift in the source data); -clean to repair leftover slivers.
+const initialTopo = topology({ iller: enriched }, 1e5)
 const mapshaperOutput = await mapshaper.applyCommands(
-  `-i input.json -simplify ${SIMPLIFY_PERCENT} keep-shapes -clean -o output.json format=geojson`,
-  { 'input.json': JSON.stringify(enriched) },
+  `-i input.json snap -simplify ${SIMPLIFY_PERCENT} keep-shapes -clean -o output.json format=topojson`,
+  { 'input.json': JSON.stringify(initialTopo) },
 )
-const simplified = JSON.parse(new TextDecoder().decode(mapshaperOutput['output.json']))
-const simplifiedSize = JSON.stringify(simplified).length
-log(`     simplified: ${(simplifiedSize / 1024).toFixed(1)} KB`)
+const rawOut = mapshaperOutput['output.json']
+const simplifiedTopoStr =
+  typeof rawOut === 'string' ? rawOut : new TextDecoder().decode(rawOut)
+log(`     simplified topojson: ${(simplifiedTopoStr.length / 1024).toFixed(1)} KB`)
 
-log('4/5 Converting to TopoJSON...')
-const topo = topology({ iller: simplified }, 1e5)
-const topoStr = JSON.stringify(topo)
+log('4/5 Re-parsing simplified TopoJSON...')
+const topo = JSON.parse(simplifiedTopoStr)
+const topoStr = simplifiedTopoStr
 log(`     topojson:   ${(topoStr.length / 1024).toFixed(1)} KB`)
 
 log('5/6 Writing topojson output(s)...')
