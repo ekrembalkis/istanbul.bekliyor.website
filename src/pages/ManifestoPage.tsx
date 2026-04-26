@@ -139,6 +139,15 @@ export default function ManifestoPage() {
               >
                 {MANIFESTO.closing}
               </p>
+              <div className="text-center mt-6">
+                <Link
+                  to="/mektuplar"
+                  className="editorial-mono text-ink-muted hover:text-accent border-b border-current transition-colors pb-[2px]"
+                  style={{ letterSpacing: '0.22em', fontSize: 11 }}
+                >
+                  → YA DA BİR MEKTUP YAZ
+                </Link>
+              </div>
             </div>
           </div>
         </section>

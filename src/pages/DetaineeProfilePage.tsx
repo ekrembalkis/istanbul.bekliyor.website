@@ -12,6 +12,7 @@ import {
   type EventFilterValue,
 } from '../components/detainee/EventTypeFilter'
 import { useDetainee, useDetaineeEvents } from '../lib/detainees'
+import { LettersWall } from '../components/letters/LettersWall'
 import { SITE, PAPER_GRAIN_DATA_URL } from '../config/site'
 
 export default function DetaineeProfilePage() {
@@ -104,7 +105,7 @@ export default function DetaineeProfilePage() {
             <ProfileHero detainee={fetch.detainee} />
 
             <section className="px-[6vw]">
-              <div className="max-w-[1480px] mx-auto flex flex-wrap items-center justify-end gap-6 editorial-mono">
+              <div className="max-w-[1480px] mx-auto flex flex-wrap items-center justify-end gap-x-8 gap-y-3 editorial-mono">
                 <Link
                   to={`/kart?kisi=${fetch.detainee.slug}&sablon=detainee`}
                   viewTransition
@@ -112,10 +113,18 @@ export default function DetaineeProfilePage() {
                 >
                   → BU KİŞİ İÇİN KART ÜRET
                 </Link>
+                <Link
+                  to={`/mektuplar?kisi=${fetch.detainee.slug}`}
+                  className="text-accent border-b border-current hover:text-ink transition-colors pb-[2px]"
+                >
+                  → BU KİŞİYE MEKTUP YAZ
+                </Link>
               </div>
             </section>
 
             <Bio bioMd={fetch.detainee.bio_md} name={fetch.detainee.name} />
+
+            <DetaineeLettersSection detaineeId={fetch.detainee.id} slug={fetch.detainee.slug} name={fetch.detainee.name} />
 
             <section className="relative px-[6vw] py-12 sm:py-16">
               <div className="max-w-[1480px] mx-auto">
@@ -183,4 +192,51 @@ function BodyShell({ children }: { children: React.ReactNode }) {
 function buildMetaDescription(name: string, title: string | null, days: number): string {
   const role = title ? `${name}, ${title}` : name
   return `${role} ${days} gündür özgürlüğünden mahrum. Hak, hukuk, adalet — herkes için.`
+}
+
+function DetaineeLettersSection({
+  detaineeId,
+  slug,
+  name,
+}: {
+  detaineeId: string
+  slug: string
+  name: string
+}) {
+  return (
+    <section className="relative px-[6vw] py-12 sm:py-16 border-t border-rule">
+      <div className="max-w-[1480px] mx-auto">
+        <div
+          className="grid grid-cols-12 gap-6 border-b border-rule pb-4 editorial-mono text-ink-muted"
+          style={{ letterSpacing: '0.32em', fontSize: 11 }}
+        >
+          <span className="col-span-12 sm:col-span-4 text-accent">— BU KİŞİYE YAZILANLAR</span>
+          <span className="col-span-12 sm:col-span-4 sm:text-center">{name.toLocaleUpperCase('tr-TR')}</span>
+          <span className="col-span-12 sm:col-span-4 sm:text-right">
+            <Link
+              to={`/mektuplar?kisi=${slug}`}
+              className="hover:text-accent transition-colors"
+            >
+              → MEKTUP YAZ
+            </Link>
+          </span>
+        </div>
+        <div className="mt-8">
+          <LettersWall
+            filter={{ kind: 'detainee', id: detaineeId }}
+            initialLimit={10}
+          />
+        </div>
+        <div className="mt-6 text-center">
+          <Link
+            to="/mektuplar"
+            className="editorial-mono text-ink-muted hover:text-accent border-b border-current transition-colors pb-[2px]"
+            style={{ letterSpacing: '0.22em', fontSize: 11 }}
+          >
+            TÜM MEKTUPLARI GÖR →
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
 }
