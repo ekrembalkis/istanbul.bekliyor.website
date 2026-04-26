@@ -12,23 +12,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400;1,9..144,500;1,9..144,600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script>
-    // FOUC prevention — apply theme BEFORE React boots.
-    (function () {
-      try {
-        var stored = localStorage.getItem('ib-theme');
-        var choice = (stored === 'light' || stored === 'dark' || stored === 'system') ? stored : 'system';
-        var resolved = choice === 'system'
-          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-          : choice;
-        var html = document.documentElement;
-        html.setAttribute('data-theme', resolved);
-        html.dataset.themeChoice = choice;
-      } catch (e) {
-        document.documentElement.setAttribute('data-theme', 'dark');
-      }
-    })();
-  </script>
+  <!-- FOUC prevention — runs before body parse, applies theme before React.
+       External (not inline) so CSP `script-src 'self'` allows it. -->
+  <script src="/theme-init.js"></script>
 </head>
 <body>
   <div id="root"></div>
