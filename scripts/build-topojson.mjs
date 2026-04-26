@@ -22,6 +22,8 @@ import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mapshaper from 'mapshaper'
 import { topology } from 'topojson-server'
+import { feature } from 'topojson-client'
+import { geoIdentity, geoPath } from 'd3-geo'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -33,8 +35,10 @@ const config = JSON.parse(
 )
 const SOURCE_URL = process.env.TR_GEOJSON_URL || config.sourceUrl
 const SIMPLIFY_PERCENT = process.env.TR_SIMPLIFY_PERCENT || config.simplifyPercent
-const OUT_PATHS = (Array.isArray(config.outRelative) ? config.outRelative : [config.outRelative])
+const TOPO_OUT_PATHS = (Array.isArray(config.topojsonOut) ? config.topojsonOut : [config.topojsonOut])
   .map(rel => resolve(REPO_ROOT, rel))
+const PATHS_OUT = resolve(REPO_ROOT, config.pathsOut)
+const VIEWBOX = config.viewbox
 const EXPECTED_FEATURES = config.expectedFeatureCount
 
 // Build scripts log progress to stdout — this is their output contract,
@@ -131,12 +135,62 @@ const topo = topology({ iller: simplified }, 1e5)
 const topoStr = JSON.stringify(topo)
 log(`     topojson:   ${(topoStr.length / 1024).toFixed(1)} KB`)
 
-log('5/5 Writing output(s)...')
-for (const p of OUT_PATHS) {
+log('5/6 Writing topojson output(s)...')
+for (const p of TOPO_OUT_PATHS) {
   await writeFile(p, topoStr, 'utf8')
   log(`     wrote: ${p}`)
 }
 log(`     size:  ${(topoStr.length / 1024).toFixed(1)} KB`)
 log(`     reduction: ${((1 - topoStr.length / rawSize) * 100).toFixed(1)}%`)
 
-log(`Done. Commit the outputs: git add ${OUT_PATHS.map(p => p.replace(REPO_ROOT + '\\', '').replace(REPO_ROOT + '/', '')).join(' ')}`)
+// 6/6 — pre-compute SVG path d-strings at build time. Eliminates the
+// runtime topojson-client + d3-geo projection chain (which has produced
+// scale-degenerate output in the production browser bundle for reasons
+// our local Node probe couldn't reproduce). Component just renders raw
+// path strings keyed by plate.
+log('6/6 Pre-computing SVG paths (build-time projection)...')
+const fc = feature(topo, topo.objects.iller)
+if (!fc?.features?.length) {
+  throw new Error('Pre-computed FeatureCollection is empty')
+}
+// geoIdentity treats input coords as already-projected 2D pixels and just
+// rescales/translates them to fit the viewBox. No spherical projection
+// math, no antimeridian clipping, no auto-clip disks. For Turkey we accept
+// minor distortion (lat/lon used directly as x/y) since the country is
+// narrow N-S — this is exactly what an editorial choropleth needs.
+//
+// Why not Mercator: its wrapper auto-applies a clip-disk of radius π·scale
+// on every scale/translate, intersected with any clipExtent we set —
+// impossible to disable. Why not Equirectangular: it inherits the world-
+// boundary clip path which got injected into every province d-string as a
+// 1000×500 frame rectangle. geoIdentity has neither problem.
+//
+// reflectY(true) flips the y-axis because lat increases northward but SVG
+// y-coordinates increase downward.
+const projection = geoIdentity().reflectY(true).fitSize(VIEWBOX, fc)
+const path = geoPath(projection)
+const pathByPlate = {}
+for (const f of fc.features) {
+  const plate = f.properties.plate
+  const d = path(f)
+  if (!d || d.length < 10) {
+    throw new Error(`Empty path for plate ${plate}`)
+  }
+  pathByPlate[plate] = d
+}
+const pathsDoc = {
+  viewbox: VIEWBOX,
+  features: pathByPlate, // { [plate]: 'M...' }
+  meta: {
+    source: config.sourceUrl,
+    simplifyPercent: SIMPLIFY_PERCENT,
+    featureCount: fc.features.length,
+    projection: 'geoMercator+fitSize',
+  },
+}
+const pathsStr = JSON.stringify(pathsDoc)
+await writeFile(PATHS_OUT, pathsStr, 'utf8')
+log(`     wrote: ${PATHS_OUT}`)
+log(`     size:  ${(pathsStr.length / 1024).toFixed(1)} KB`)
+
+log('Done. Commit the outputs: git add src/data/tr-iller.topo.json public/tr-iller.topo.json src/data/tr-il-paths.json')

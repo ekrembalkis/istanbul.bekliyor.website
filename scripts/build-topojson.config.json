@@ -1,10 +1,12 @@
 {
   "sourceUrl": "https://raw.githubusercontent.com/cihadturhan/tr-geojson/master/geo/tr-cities-utf8.json",
   "simplifyPercent": "5%",
-  "outRelative": [
+  "topojsonOut": [
     "src/data/tr-iller.topo.json",
     "public/tr-iller.topo.json"
   ],
+  "pathsOut": "src/data/tr-il-paths.json",
+  "viewbox": [1000, 562],
   "expectedFeatureCount": 81,
   "attribution": "cihadturhan/tr-geojson (MIT)"
 }
