@@ -83,18 +83,20 @@ export function barRatio(count: number, max: number): number {
 }
 
 /**
- * Choropleth fill ramp — krem (paper) → brand red (#E30A17), 5 discrete bins.
+ * Choropleth fill ramp — paper-tinted → brand red (#E30A17), 5 discrete bins.
  * Discrete chosen over interpolation: editorial maps (NYT/Guardian) use bins
  * because they're visually legible and printer-safe.
  *
- * Bin assignment goes through `barRatio` (log1p) so a single outlier doesn't
- * flatten the rest of the map.
+ * Bin 0 ("no data") is intentionally a touch darker than --bg (#f1ece4) so
+ * province silhouettes read as paper-on-paper rather than disappearing into
+ * the page. Bin assignment goes through `barRatio` (log1p) so a single
+ * outlier doesn't flatten the rest of the map.
  */
 export const CHOROPLETH_RAMP = [
-  '#f4ede0', // 0 — krem (paper, "veri yok")
-  '#fbe3da', // 1 — softest pink
-  '#f3a89c', // 2 — pink
-  '#e6645a', // 3 — red-orange
+  '#e6dccb', // 0 — aged paper, just below bg for silhouette contrast
+  '#f0c8b8', // 1 — softest pink
+  '#e89a8c', // 2 — pink
+  '#dd5848', // 3 — red-orange
   '#E30A17', // 4 — brand red
 ] as const
 

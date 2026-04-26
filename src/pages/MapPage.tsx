@@ -158,10 +158,10 @@ export default function MapPage() {
             <div className="grid grid-cols-12 gap-6 border-b border-rule pb-4 editorial-mono text-ink-muted">
               <span className="col-span-12 sm:col-span-4 text-accent">— Görsel harita</span>
               <span className="col-span-12 sm:col-span-4 sm:text-center">
-                Türkiye · Mercator
+                Türkiye · 81 il
               </span>
               <span className="col-span-12 sm:col-span-4 sm:text-right">
-                Veri: cihadturhan/tr-geojson
+                Mercator · {SITE.romanYear}
               </span>
             </div>
 
