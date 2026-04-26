@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { aggregateByProvince, barRatio } from '../provinces'
+import {
+  aggregateByProvince,
+  barRatio,
+  colorForCount,
+  CHOROPLETH_RAMP,
+} from '../provinces'
 import type { Detainee } from '../detainees'
 import { CITIES } from '../../data/cities'
 
@@ -112,5 +117,37 @@ describe('barRatio', () => {
   it('handles max=1 cleanly (avoids log1p(1) division surprises)', () => {
     expect(barRatio(1, 1)).toBe(1)
     expect(barRatio(0, 1)).toBe(0)
+  })
+})
+
+describe('colorForCount', () => {
+  it('returns the "no data" krem swatch for zero', () => {
+    expect(colorForCount(0, 5)).toBe(CHOROPLETH_RAMP[0])
+    expect(colorForCount(0, 0)).toBe(CHOROPLETH_RAMP[0])
+  })
+
+  it('returns the brand red max swatch for the max value', () => {
+    expect(colorForCount(50, 50)).toBe(CHOROPLETH_RAMP[4])
+  })
+
+  it('lifts a single observation off the krem floor (log1p)', () => {
+    // count=1 with max=50 → ratio ≈ log1p(1)/log1p(50) ≈ 0.18 → bin 1.
+    expect(colorForCount(1, 50)).toBe(CHOROPLETH_RAMP[1])
+  })
+
+  it('uses all 5 bins across a realistic distribution', () => {
+    const max = 50
+    const seen = new Set<string>()
+    for (const c of [0, 1, 5, 15, 50]) {
+      seen.add(colorForCount(c, max))
+    }
+    expect(seen.size).toBe(5)
+  })
+
+  it('CHOROPLETH_RAMP is a 5-color palette', () => {
+    expect(CHOROPLETH_RAMP).toHaveLength(5)
+    for (const swatch of CHOROPLETH_RAMP) {
+      expect(swatch).toMatch(/^#[0-9a-fA-F]{6}$/)
+    }
   })
 })

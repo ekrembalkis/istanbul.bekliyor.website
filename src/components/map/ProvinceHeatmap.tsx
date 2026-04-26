@@ -7,9 +7,15 @@ type Props = {
   ranked: ProvinceStats[]
   /** Hide rows with zero detainees. */
   hideEmpty?: boolean
+  /**
+   * If provided, clicking a province delegates to the parent (used by MapPage
+   * to open the shared ProvincePanel). When omitted, falls back to the
+   * inline accordion behaviour so existing consumers keep working.
+   */
+  onSelectProvince?: (plate: number) => void
 }
 
-export function ProvinceHeatmap({ ranked, hideEmpty = false }: Props) {
+export function ProvinceHeatmap({ ranked, hideEmpty = false, onSelectProvince }: Props) {
   const [expanded, setExpanded] = useState<number | null>(null)
   const visible = hideEmpty ? ranked.filter(r => r.count > 0) : ranked
 
@@ -30,9 +36,13 @@ export function ProvinceHeatmap({ ranked, hideEmpty = false }: Props) {
           key={row.city.plate ?? row.city.slug}
           row={row}
           max={max}
-          expanded={expanded === row.city.plate}
+          expanded={!onSelectProvince && expanded === row.city.plate}
           onToggle={() => {
             if (row.count === 0) return
+            if (onSelectProvince) {
+              if (row.city.plate != null) onSelectProvince(row.city.plate)
+              return
+            }
             setExpanded(prev => (prev === row.city.plate ? null : row.city.plate))
           }}
         />

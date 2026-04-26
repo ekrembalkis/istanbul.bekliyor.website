@@ -12,6 +12,7 @@ import {
   type EventFilterValue,
 } from '../components/detainee/EventTypeFilter'
 import { useDetainee, useDetaineeEvents } from '../lib/detainees'
+import { findCityByPlate } from '../data/cities'
 import { LettersWall } from '../components/letters/LettersWall'
 import { SITE, PAPER_GRAIN_DATA_URL } from '../config/site'
 
@@ -119,6 +120,20 @@ export default function DetaineeProfilePage() {
                 >
                   → BU KİŞİYE MEKTUP YAZ
                 </Link>
+                {(() => {
+                  const city = fetch.detainee.province_plate
+                    ? findCityByPlate(fetch.detainee.province_plate)
+                    : null
+                  if (!city) return null
+                  return (
+                    <Link
+                      to={`/harita?il=${city.slug}`}
+                      className="text-accent border-b border-current hover:text-ink transition-colors pb-[2px]"
+                    >
+                      → İL'İN HARİTASI
+                    </Link>
+                  )
+                })()}
               </div>
             </section>
 

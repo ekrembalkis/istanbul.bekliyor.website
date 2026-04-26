@@ -81,3 +81,30 @@ export function barRatio(count: number, max: number): number {
   if (max === 1) return count > 0 ? 1 : 0
   return Math.log1p(count) / Math.log1p(max)
 }
+
+/**
+ * Choropleth fill ramp — krem (paper) → brand red (#E30A17), 5 discrete bins.
+ * Discrete chosen over interpolation: editorial maps (NYT/Guardian) use bins
+ * because they're visually legible and printer-safe.
+ *
+ * Bin assignment goes through `barRatio` (log1p) so a single outlier doesn't
+ * flatten the rest of the map.
+ */
+export const CHOROPLETH_RAMP = [
+  '#f4ede0', // 0 — krem (paper, "veri yok")
+  '#fbe3da', // 1 — softest pink
+  '#f3a89c', // 2 — pink
+  '#e6645a', // 3 — red-orange
+  '#E30A17', // 4 — brand red
+] as const
+
+export function colorForCount(count: number, max: number): string {
+  if (count <= 0) return CHOROPLETH_RAMP[0]
+  const ratio = barRatio(count, max)
+  // Map ratio (0..1] into bins 1..4 (skip bin 0 = "no data").
+  // Bin 1: (0, 0.25], Bin 2: (0.25, 0.5], Bin 3: (0.5, 0.75], Bin 4: (0.75, 1].
+  if (ratio <= 0.25) return CHOROPLETH_RAMP[1]
+  if (ratio <= 0.5) return CHOROPLETH_RAMP[2]
+  if (ratio <= 0.75) return CHOROPLETH_RAMP[3]
+  return CHOROPLETH_RAMP[4]
+}

@@ -1,22 +1,59 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { Masthead } from '../components/public/Masthead'
 import { Footer } from '../components/public/Footer'
 import { ProvinceHeatmap } from '../components/map/ProvinceHeatmap'
+import { ProvincePanel } from '../components/map/ProvincePanel'
+import { TurkeyChoroplethSkeleton } from '../components/map/TurkeyChoroplethSkeleton'
 import { useDetainees } from '../lib/detainees'
 import { aggregateByProvince } from '../lib/provinces'
+import { findCityBySlug, findCityByPlate } from '../data/cities'
 import { getDayCount } from '../lib/utils'
 import { PAPER_GRAIN_DATA_URL, SITE } from '../config/site'
+
+// Lazy choropleth → its TopoJSON (~31KB) + d3-geo + topojson-client land
+// in a separate chunk, untouched by the main bundle.
+const TurkeyChoropleth = lazy(() =>
+  import('../components/map/TurkeyChoropleth').then(m => ({ default: m.TurkeyChoropleth })),
+)
 
 export default function MapPage() {
   const day = getDayCount()
   const { data: detainees, error } = useDetainees()
   const [hideEmpty, setHideEmpty] = useState(true)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const aggregation = useMemo(
     () => aggregateByProvince(detainees ?? []),
     [detainees],
+  )
+
+  const selectedSlug = searchParams.get('il')
+  const selectedPlate = useMemo<number | null>(() => {
+    if (!selectedSlug) return null
+    return findCityBySlug(selectedSlug)?.plate ?? null
+  }, [selectedSlug])
+
+  const handleSelect = useCallback(
+    (plate: number | null) => {
+      if (plate === null) {
+        setSearchParams(prev => {
+          const next = new URLSearchParams(prev)
+          next.delete('il')
+          return next
+        }, { replace: true })
+        return
+      }
+      const slug = findCityByPlate(plate)?.slug
+      if (!slug) return
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev)
+        next.set('il', slug)
+        return next
+      }, { replace: true })
+    },
+    [setSearchParams],
   )
 
   return (
@@ -116,6 +153,30 @@ export default function MapPage() {
           </div>
         </section>
 
+        <section className="relative px-[6vw] py-8 sm:py-12">
+          <div className="max-w-[1180px] mx-auto">
+            <div className="grid grid-cols-12 gap-6 border-b border-rule pb-4 editorial-mono text-ink-muted">
+              <span className="col-span-12 sm:col-span-4 text-accent">— Görsel harita</span>
+              <span className="col-span-12 sm:col-span-4 sm:text-center">
+                Türkiye · Mercator
+              </span>
+              <span className="col-span-12 sm:col-span-4 sm:text-right">
+                Veri: cihadturhan/tr-geojson
+              </span>
+            </div>
+
+            <div className="mt-8">
+              <Suspense fallback={<TurkeyChoroplethSkeleton />}>
+                <TurkeyChoropleth
+                  aggregation={aggregation}
+                  selectedPlate={selectedPlate}
+                  onSelect={handleSelect}
+                />
+              </Suspense>
+            </div>
+          </div>
+        </section>
+
         <section className="relative px-[6vw] py-12 sm:py-16">
           <div className="max-w-[1180px] mx-auto">
             <div className="grid grid-cols-12 gap-6 border-b border-rule pb-4 editorial-mono text-ink-muted">
@@ -149,13 +210,23 @@ export default function MapPage() {
             </div>
 
             <div className="mt-6">
-              <ProvinceHeatmap ranked={aggregation.ranked} hideEmpty={hideEmpty} />
+              <ProvinceHeatmap
+                ranked={aggregation.ranked}
+                hideEmpty={hideEmpty}
+                onSelectProvince={handleSelect}
+              />
             </div>
           </div>
         </section>
 
         <Footer />
       </div>
+
+      <ProvincePanel
+        selectedPlate={selectedPlate}
+        aggregation={aggregation}
+        onClose={() => handleSelect(null)}
+      />
     </div>
   )
 }
