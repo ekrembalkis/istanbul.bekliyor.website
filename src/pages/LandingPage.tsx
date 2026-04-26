@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import { getDayCount } from '../lib/utils'
 import { useDetainees, type Detainee } from '../lib/detainees'
+import { getDailyQuote } from '../lib/quotes'
 import { SITE, PAPER_GRAIN_DATA_URL } from '../config/site'
 import { Masthead } from '../components/public/Masthead'
 import { Footer } from '../components/public/Footer'
+import { QuoteCard } from '../components/quote/QuoteCard'
 
 const ROMAN_YEAR = SITE.romanYear
 
@@ -157,6 +159,23 @@ function HeroSection({ day }: { day: number }) {
         >
           → OLAY AKIŞI
         </Link>
+        <Link
+          to="/gunun-sozu"
+          className="text-accent border-b border-current hover:text-ink transition-colors pb-[2px]"
+        >
+          → GÜNÜN SÖZÜ
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+function DailyQuoteSection({ day }: { day: number }) {
+  const quote = getDailyQuote(day)
+  return (
+    <section className="relative px-[6vw] py-20 sm:py-28 border-t border-rule">
+      <div className="max-w-[1180px] mx-auto">
+        <QuoteCard quote={quote} day={day} variant="landing" />
       </div>
     </section>
   )
@@ -332,6 +351,7 @@ export default function LandingPage() {
 
       <div className="relative z-10">
         <HeroSection day={day} />
+        <DailyQuoteSection day={day} />
         <DetaineesSection />
         <Footer />
       </div>
