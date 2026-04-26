@@ -155,6 +155,16 @@ export default function DetaineeProfilePage() {
                   error={eventsError}
                   filtered={filter !== 'all'}
                 />
+
+                <div className="mt-10 text-center">
+                  <Link
+                    to="/olay-akisi"
+                    className="editorial-mono text-ink-muted hover:text-accent border-b border-current transition-colors pb-[2px]"
+                    style={{ letterSpacing: '0.22em', fontSize: 11 }}
+                  >
+                    → SİTE GENELİ OLAY AKIŞINA GİT
+                  </Link>
+                </div>
               </div>
             </section>
           </>

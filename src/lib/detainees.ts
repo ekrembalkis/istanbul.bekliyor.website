@@ -27,10 +27,15 @@ export type DetaineeEventType =
   | 'statement'
   | 'transfer'
   | 'other'
+  | 'protest'
+  | 'legal'
+  | 'press'
+  | 'milestone'
 
 export type DetaineeEvent = {
   id: string
-  detainee_id: string
+  /** null = site-wide / general event (not bound to a specific detainee). */
+  detainee_id: string | null
   event_date: string
   event_type: DetaineeEventType
   title: string
@@ -40,9 +45,10 @@ export type DetaineeEvent = {
   display_order: number
 }
 
-const VALID_EVENT_TYPES: ReadonlySet<DetaineeEventType> = new Set([
+export const VALID_EVENT_TYPES: ReadonlySet<DetaineeEventType> = new Set([
   'arrest', 'detention', 'indictment', 'hearing', 'ruling',
   'release', 'statement', 'transfer', 'other',
+  'protest', 'legal', 'press', 'milestone',
 ])
 
 const FALLBACK: Detainee[] = [
@@ -98,12 +104,12 @@ function isValidRow(row: unknown): row is DetaineeRow {
   )
 }
 
-function isValidEvent(row: unknown): row is DetaineeEvent {
+export function isValidEvent(row: unknown): row is DetaineeEvent {
   if (!row || typeof row !== 'object') return false
   const r = row as Record<string, unknown>
   return (
     typeof r.id === 'string' &&
-    typeof r.detainee_id === 'string' &&
+    isStringOrNull(r.detainee_id) &&
     typeof r.event_date === 'string' &&
     /^\d{4}-\d{2}-\d{2}/.test(r.event_date) &&
     typeof r.event_type === 'string' &&
@@ -344,4 +350,113 @@ export const EVENT_TYPE_LABELS: Record<DetaineeEventType, string> = {
   statement: 'AÇIKLAMA',
   transfer: 'NAKİL',
   other: 'DİĞER',
+  protest: 'EYLEM',
+  legal: 'HUKUKİ ADIM',
+  press: 'BASIN',
+  milestone: 'DÖNÜM NOKTASI',
+}
+
+export type EventStreamFilter = {
+  types?: DetaineeEventType[]
+  /** null = "general" (no detainee), string = specific detainee id, undefined = no filter. */
+  detaineeId?: string | 'general'
+}
+
+/** Pure helper for `useEventsStream` consumers + tests. */
+export function filterEventsStream(
+  events: DetaineeEvent[],
+  filter: EventStreamFilter,
+): DetaineeEvent[] {
+  const typeSet = filter.types && filter.types.length > 0 ? new Set(filter.types) : null
+  return events.filter(e => {
+    if (typeSet && !typeSet.has(e.event_type)) return false
+    if (filter.detaineeId === 'general') {
+      return e.detainee_id === null
+    }
+    if (typeof filter.detaineeId === 'string') {
+      return e.detainee_id === filter.detaineeId
+    }
+    return true
+  })
+}
+
+export type EventsStreamState = {
+  events: DetaineeEvent[]
+  loading: boolean
+  error: string | null
+}
+
+const EVENT_COLUMNS =
+  'id, detainee_id, event_date, event_type, title, description, source_url, source_label, display_order'
+
+const EVENTS_STREAM_POLL_MS = 30_000
+
+/**
+ * Site-wide event stream hook.
+ * Fetches every event ordered by date DESC. Filtering is done in the page layer
+ * via filterEventsStream so chip toggles stay snappy without re-querying.
+ * 30s polling keeps the feed live for visitors leaving the tab open.
+ */
+export function useEventsStream(opts: { limit?: number } = {}): EventsStreamState {
+  const [events, setEvents] = useState<DetaineeEvent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const limit = opts.limit ?? 200
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      if (!supabase) {
+        if (!cancelled) {
+          setEvents([])
+          setLoading(false)
+        }
+        return
+      }
+
+      const { data: rows, error: err } = await supabase
+        .from('detainee_events')
+        .select(EVENT_COLUMNS)
+        .order('event_date', { ascending: false })
+        .order('display_order', { ascending: false })
+        .limit(limit)
+
+      if (cancelled) return
+
+      if (err || !rows) {
+        const msg = (err?.message ?? 'Bilinmeyen Supabase hatası').slice(0, 80)
+        console.warn('[events_stream] fetch failed')
+        setError(msg)
+        setLoading(false)
+        return
+      }
+
+      const valid: DetaineeEvent[] = []
+      let dropped = 0
+      for (const raw of rows) {
+        if (isValidEvent(raw)) {
+          valid.push(raw)
+        } else {
+          dropped++
+        }
+      }
+      if (dropped > 0) {
+        console.warn(`[events_stream] ${dropped} row(s) dropped (schema mismatch)`)
+      }
+      setEvents(valid)
+      setError(null)
+      setLoading(false)
+    }
+
+    load()
+    const interval = setInterval(load, EVENTS_STREAM_POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [limit])
+
+  return { events, loading, error }
 }

@@ -151,6 +151,12 @@ function HeroSection({ day }: { day: number }) {
         >
           → MEKTUP YAZ
         </Link>
+        <Link
+          to="/olay-akisi"
+          className="text-accent border-b border-current hover:text-ink transition-colors pb-[2px]"
+        >
+          → OLAY AKIŞI
+        </Link>
       </div>
     </section>
   )
