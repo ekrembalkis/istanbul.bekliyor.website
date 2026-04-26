@@ -165,6 +165,12 @@ function HeroSection({ day }: { day: number }) {
         >
           → GÜNÜN SÖZÜ
         </Link>
+        <Link
+          to="/harita"
+          className="text-accent border-b border-current hover:text-ink transition-colors pb-[2px]"
+        >
+          → HARİTA
+        </Link>
       </div>
     </section>
   )

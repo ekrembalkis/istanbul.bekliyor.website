@@ -7,6 +7,7 @@ import OutreachPage from './pages/OutreachPage'
 import LettersPage from './pages/LettersPage'
 import EventStreamPage from './pages/EventStreamPage'
 import DailyQuotePage from './pages/DailyQuotePage'
+import MapPage from './pages/MapPage'
 import NotFoundPage from './pages/NotFoundPage'
 import { EditorialLoading } from './components/public/EditorialLoading'
 
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/mektuplar" element={<LettersPage />} />
         <Route path="/olay-akisi" element={<EventStreamPage />} />
         <Route path="/gunun-sozu" element={<DailyQuotePage />} />
+        <Route path="/harita" element={<MapPage />} />
         <Route
           path="/kart"
           element={

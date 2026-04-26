@@ -14,6 +14,8 @@ export type Detainee = {
   display_order: number
   notes: string | null
   bio_md: string | null
+  /** Türkiye plaka kodu 1..81. null = il bilinmiyor / belirtilmemiş. */
+  province_plate: number | null
   day_count: number
 }
 
@@ -64,12 +66,13 @@ const FALLBACK: Detainee[] = [
     display_order: 1,
     notes: null,
     bio_md: null,
+    province_plate: 34,
     day_count: 0,
   },
 ]
 
 const DETAINEE_COLUMNS =
-  'id, slug, name, title, arrest_date, release_date, photo_url, is_featured, display_order, notes, bio_md'
+  'id, slug, name, title, arrest_date, release_date, photo_url, is_featured, display_order, notes, bio_md, province_plate'
 
 type DetaineeRow = Omit<Detainee, 'day_count'>
 
@@ -83,6 +86,11 @@ function isBool(v: unknown): v is boolean {
 
 function isFiniteInt(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v) && Math.floor(v) === v
+}
+
+function isPlateOrNull(v: unknown): v is number | null {
+  if (v === null) return true
+  return isFiniteInt(v) && v >= 1 && v <= 81
 }
 
 function isValidRow(row: unknown): row is DetaineeRow {
@@ -99,6 +107,7 @@ function isValidRow(row: unknown): row is DetaineeRow {
     isStringOrNull(r.photo_url) &&
     isStringOrNull(r.notes) &&
     isStringOrNull(r.bio_md) &&
+    isPlateOrNull(r.province_plate) &&
     isBool(r.is_featured) &&
     isFiniteInt(r.display_order)
   )
