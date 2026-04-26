@@ -95,9 +95,10 @@ export function TurkeyChoropleth({ aggregation, selectedPlate, onSelect }: Props
                 key={plate}
                 d={d}
                 fill={fill}
-                stroke={isSelected ? 'var(--accent)' : 'rgba(20, 18, 16, 0.55)'}
-                strokeWidth={isSelected ? 3.5 : 1.5}
+                stroke={isSelected ? 'var(--accent)' : 'rgba(20, 18, 16, 0.4)'}
+                strokeWidth={isSelected ? 2.5 : 0.8}
                 strokeLinejoin="round"
+                strokeLinecap="round"
                 vectorEffect="non-scaling-stroke"
                 style={pathStyle(interactive)}
                 tabIndex={interactive ? 0 : -1}

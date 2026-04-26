@@ -1,6 +1,6 @@
 {
   "sourceUrl": "https://raw.githubusercontent.com/cihadturhan/tr-geojson/master/geo/tr-cities-utf8.json",
-  "simplifyPercent": "5%",
+  "simplifyPercent": "12%",
   "topojsonOut": [
     "src/data/tr-iller.topo.json",
     "public/tr-iller.topo.json"

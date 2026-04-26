@@ -121,9 +121,13 @@ if (allPlates.size !== EXPECTED_FEATURES) {
   throw new Error(`Plate uniqueness check failed: ${allPlates.size} unique`)
 }
 
-log(`3/5 Mapshaper simplify (Visvalingam ${SIMPLIFY_PERCENT}, keep-shapes)...`)
+log(`3/5 Mapshaper simplify (Visvalingam ${SIMPLIFY_PERCENT}, keep-shapes, clean)...`)
+// `-clean` after simplification fixes the slivers and gaps that pure
+// per-polygon simplification creates between provinces. Without it, shared
+// borders simplify independently and you see hairline white gaps between
+// neighbouring il polygons in the rendered choropleth.
 const mapshaperOutput = await mapshaper.applyCommands(
-  `-i input.json -simplify ${SIMPLIFY_PERCENT} keep-shapes -o output.json format=geojson`,
+  `-i input.json -simplify ${SIMPLIFY_PERCENT} keep-shapes -clean -o output.json format=geojson`,
   { 'input.json': JSON.stringify(enriched) },
 )
 const simplified = JSON.parse(new TextDecoder().decode(mapshaperOutput['output.json']))
@@ -153,24 +157,41 @@ const fc = feature(topo, topo.objects.iller)
 if (!fc?.features?.length) {
   throw new Error('Pre-computed FeatureCollection is empty')
 }
-// geoIdentity treats input coords as already-projected 2D pixels and just
-// rescales/translates them to fit the viewBox. No spherical projection
-// math, no antimeridian clipping, no auto-clip disks. For Turkey we accept
-// minor distortion (lat/lon used directly as x/y) since the country is
-// narrow N-S — this is exactly what an editorial choropleth needs.
-//
-// Why not Mercator: its wrapper auto-applies a clip-disk of radius π·scale
-// on every scale/translate, intersected with any clipExtent we set —
-// impossible to disable. Why not Equirectangular: it inherits the world-
-// boundary clip path which got injected into every province d-string as a
-// 1000×500 frame rectangle. geoIdentity has neither problem.
-//
-// reflectY(true) flips the y-axis because lat increases northward but SVG
-// y-coordinates increase downward.
-const projection = geoIdentity().reflectY(true).fitSize(VIEWBOX, fc)
+
+// Manual Mercator y-projection on the source geometry. We had to abandon
+// d3-geo's geoMercator entirely (its wrapper auto-applies a clip-disk of
+// radius π·scale on every scale/translate change — impossible to disable;
+// the disk's edges leaked into every province path as vertical lines).
+// geoEquirectangular added a different artifact (world-boundary frame).
+// Pre-applying Mercator's y-formula by hand and then using geoIdentity
+// to fit-rescale gives the visual proportions of Mercator without any
+// d3-geo clipping interference.
+function mercatorize(geojson) {
+  // Both x and y in radians so fitSize's uniform scale renders Turkey at
+  // its real Mercator aspect ratio. Mixing degrees-x with radians-y (the
+  // first attempt) made every province collapse to a 5-pixel-tall sliver.
+  const project = ([lon, lat]) => {
+    const lambda = (lon * Math.PI) / 180
+    const phi = (lat * Math.PI) / 180
+    return [lambda, Math.log(Math.tan(Math.PI / 4 + phi / 2))]
+  }
+  const walk = (coords) => {
+    if (typeof coords[0] === 'number') return project(coords)
+    return coords.map(walk)
+  }
+  return {
+    ...geojson,
+    features: geojson.features.map((f) => ({
+      ...f,
+      geometry: { ...f.geometry, coordinates: walk(f.geometry.coordinates) },
+    })),
+  }
+}
+const mercatorized = mercatorize(fc)
+const projection = geoIdentity().reflectY(true).fitSize(VIEWBOX, mercatorized)
 const path = geoPath(projection)
 const pathByPlate = {}
-for (const f of fc.features) {
+for (const f of mercatorized.features) {
   const plate = f.properties.plate
   const d = path(f)
   if (!d || d.length < 10) {
