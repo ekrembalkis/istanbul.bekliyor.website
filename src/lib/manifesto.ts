@@ -26,6 +26,7 @@ function isValidRow(row: unknown): row is ManifestoSignature {
     typeof r.name === 'string' &&
     typeof r.city === 'string' &&
     typeof r.created_at === 'string' &&
+    /^\d{4}-\d{2}-\d{2}/.test(r.created_at) &&
     (r.message === null || typeof r.message === 'string')
   )
 }
@@ -201,11 +202,14 @@ export async function submitSignature(
 export const SUBMIT_ERROR_MESSAGES: Record<string, string> = {
   validation: 'Bir alan eksik veya geçersiz. Lütfen kontrol edin.',
   message_rejected: 'Mesajınız moderasyon tarafından reddedildi. Lütfen daha nazik bir ifade deneyin.',
+  moderation_unavailable: 'Moderasyon servisi şu an ulaşılmıyor. 30 saniye sonra tekrar deneyin.',
   already_signed_today: 'Bu cihazdan bugün zaten imza atılmış. Yarın yine bekleriz.',
   rate_limited: 'Çok hızlı deniyorsunuz. Lütfen bir dakika bekleyin.',
   db_unavailable: 'Veri kaynağı şu an ulaşılmıyor. Birazdan tekrar deneyin.',
   config_missing: 'Sunucu yapılandırması eksik. Yetkililer bilgilendirildi.',
   db_error: 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.',
+  origin_not_allowed: 'Bu site bu işleme izin vermiyor.',
+  method_not_allowed: 'Geçersiz istek yöntemi.',
   network: 'Bağlantı kurulamadı. İnternet bağlantınızı kontrol edin.',
   unknown: 'Beklenmeyen bir hata. Lütfen tekrar deneyin.',
 }

@@ -67,6 +67,18 @@ const DETAINEE_COLUMNS =
 
 type DetaineeRow = Omit<Detainee, 'day_count'>
 
+function isStringOrNull(v: unknown): v is string | null {
+  return v === null || typeof v === 'string'
+}
+
+function isBool(v: unknown): v is boolean {
+  return typeof v === 'boolean'
+}
+
+function isFiniteInt(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && Math.floor(v) === v
+}
+
 function isValidRow(row: unknown): row is DetaineeRow {
   if (!row || typeof row !== 'object') return false
   const r = row as Record<string, unknown>
@@ -75,7 +87,14 @@ function isValidRow(row: unknown): row is DetaineeRow {
     typeof r.slug === 'string' &&
     typeof r.name === 'string' &&
     typeof r.arrest_date === 'string' &&
-    /^\d{4}-\d{2}-\d{2}/.test(r.arrest_date)
+    /^\d{4}-\d{2}-\d{2}/.test(r.arrest_date) &&
+    isStringOrNull(r.title) &&
+    isStringOrNull(r.release_date) &&
+    isStringOrNull(r.photo_url) &&
+    isStringOrNull(r.notes) &&
+    isStringOrNull(r.bio_md) &&
+    isBool(r.is_featured) &&
+    isFiniteInt(r.display_order)
   )
 }
 
@@ -89,7 +108,11 @@ function isValidEvent(row: unknown): row is DetaineeEvent {
     /^\d{4}-\d{2}-\d{2}/.test(r.event_date) &&
     typeof r.event_type === 'string' &&
     VALID_EVENT_TYPES.has(r.event_type as DetaineeEventType) &&
-    typeof r.title === 'string'
+    typeof r.title === 'string' &&
+    isStringOrNull(r.description) &&
+    isStringOrNull(r.source_url) &&
+    isStringOrNull(r.source_label) &&
+    isFiniteInt(r.display_order)
   )
 }
 
@@ -176,6 +199,9 @@ export function useDetainee(slug: string | undefined): DetaineeFetchState {
 
   useEffect(() => {
     let cancelled = false
+    // Reset to 'loading' on every key change so the previous detainee's
+    // 'ready' state doesn't flash for a frame.
+    setState({ status: 'loading' })
 
     async function load() {
       if (!slug) {

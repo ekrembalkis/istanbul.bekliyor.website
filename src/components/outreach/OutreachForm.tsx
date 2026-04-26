@@ -147,6 +147,7 @@ export function OutreachForm() {
               <button
                 type="button"
                 onClick={regenerate}
+                aria-label="Mesajı şablon haline geri döndür"
                 className="hover:text-accent transition-colors"
               >
                 ↻ ŞABLONA SIFIRLA

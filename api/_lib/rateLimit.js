@@ -7,24 +7,19 @@
 //
 // Default budget: 30 calls / minute / IP.
 
+import { clientIp } from './ip.js'
+
 const DEFAULT_LIMIT = 30
 const DEFAULT_WINDOW_MS = 60_000
 
 const buckets = new Map() // key -> { count, resetAt }
-
-function ipFrom(req) {
-  const fwd = req.headers['x-forwarded-for']
-  if (typeof fwd === 'string' && fwd.length > 0) return fwd.split(',')[0].trim()
-  if (Array.isArray(fwd) && fwd.length > 0) return fwd[0]
-  return req.socket?.remoteAddress || 'unknown'
-}
 
 /**
  * Returns true if the request is allowed. Mutates the bucket as a side effect.
  * Sets X-RateLimit-* response headers so the client can backoff.
  */
 export function rateLimit(req, res, { limit = DEFAULT_LIMIT, windowMs = DEFAULT_WINDOW_MS, scope = 'global' } = {}) {
-  const ip = ipFrom(req)
+  const ip = clientIp(req)
   const key = `${scope}:${ip}`
   const now = Date.now()
 

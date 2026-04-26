@@ -1,38 +1,32 @@
 // POST /api/manifesto/sign — accepts a manifesto signature.
 //
 // Spam protection in this order (cheapest checks first):
-//   1. Rate limit (3 attempts / 60s / IP)
-//   2. Honeypot field (silently dropped if filled)
-//   3. Body validation (length / type)
-//   4. Optional Gemini toxicity check (only when message present)
-//   5. IP-day uniqueness via DB unique index
+//   1. CORS origin allowlist (rejects cross-site form posts up front)
+//   2. Rate limit (3 attempts / 60s / IP)
+//   3. Honeypot field — silently accepted with the same shape as a real
+//      signature so bots can't tell they were caught
+//   4. Body validation (length / type)
+//   5. Gemini toxicity check (fail-closed: errors return 503)
+//   6. IP-day uniqueness via DB unique index
 //
 // IP is hashed with a server-side salt before storage so the table never
 // holds raw IPs.
 
 import { createHash } from 'node:crypto'
+import { applyCors } from '../_lib/cors.js'
+import { clientIp } from '../_lib/ip.js'
 import { rateLimit } from '../_lib/rateLimit.js'
 import { adminClient } from '../_lib/supabase-admin.js'
-import { checkManifestoToxicity } from '../_lib/manifestoModeration.js'
+import {
+  checkManifestoToxicity,
+  ModerationUnavailableError,
+} from '../_lib/manifestoModeration.js'
 
 const NAME_MIN = 2
 const NAME_MAX = 50
 const CITY_MIN = 2
 const CITY_MAX = 60
 const MESSAGE_MAX = 200
-
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-}
-
-function ipFrom(req) {
-  const fwd = req.headers['x-forwarded-for']
-  if (typeof fwd === 'string' && fwd.length > 0) return fwd.split(',')[0].trim()
-  if (Array.isArray(fwd) && fwd.length > 0) return fwd[0]
-  return req.socket?.remoteAddress || 'unknown'
-}
 
 function hashIp(ip) {
   const salt = process.env.MANIFESTO_IP_SALT
@@ -62,9 +56,13 @@ async function fetchTotal(supa) {
   return data?.total ?? 0
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 export default async function handler(req, res) {
-  setCors(res)
-  if (req.method === 'OPTIONS') return res.status(200).end()
+  if (!applyCors(req, res)) return  // 204 / 403 already written
+
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'method_not_allowed' })
   }
@@ -74,10 +72,17 @@ export default async function handler(req, res) {
     return  // rateLimit already wrote 429
   }
 
-  // 2. Honeypot — silently accept (200 ok) so bots can't tell they were caught
   const body = req.body ?? {}
+
+  // 2. Honeypot — succeed indistinguishably from the real path.
+  // We fetch the real total and pad with the typical latency of a Gemini
+  // call so a bot can't side-channel the rejection by status, total, or
+  // timing. No insert happens.
   if (body.hp_url || body.hp_email) {
-    return res.status(200).json({ ok: true, total: 0, queued: true })
+    const supa = adminClient()
+    const total = supa ? await fetchTotal(supa).catch(() => 0) : 0
+    await sleep(800 + Math.floor(Math.random() * 700))
+    return res.status(201).json({ ok: true, total })
   }
 
   // 3. Validation
@@ -86,11 +91,25 @@ export default async function handler(req, res) {
     return res.status(422).json({ ok: false, error: 'validation', errors })
   }
 
-  // 4. Toxicity (only if message present)
+  // 4. Toxicity (only if message present). Fail-closed: a Gemini outage
+  //    surfaces as 503 so the client can retry rather than letting toxic
+  //    content slip through.
   if (normalized.message) {
-    const tox = await checkManifestoToxicity(normalized.message)
-    if (tox.toxic) {
-      return res.status(422).json({ ok: false, error: 'message_rejected', detail: tox.reason })
+    try {
+      const tox = await checkManifestoToxicity(normalized.message)
+      if (tox.toxic) {
+        return res.status(422).json({
+          ok: false,
+          error: 'message_rejected',
+          detail: tox.reason,
+        })
+      }
+    } catch (err) {
+      if (err instanceof ModerationUnavailableError) {
+        res.setHeader('Retry-After', '30')
+        return res.status(503).json({ ok: false, error: 'moderation_unavailable' })
+      }
+      throw err
     }
   }
 
@@ -102,7 +121,7 @@ export default async function handler(req, res) {
 
   let ip_hash
   try {
-    ip_hash = hashIp(ipFrom(req))
+    ip_hash = hashIp(clientIp(req))
   } catch (err) {
     console.error('[manifesto] cannot hash ip', err.message)
     return res.status(503).json({ ok: false, error: 'config_missing' })

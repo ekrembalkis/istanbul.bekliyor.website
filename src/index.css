@@ -306,6 +306,14 @@
   animation: editorialReveal 1.1s cubic-bezier(.2,.6,.2,1) both;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .editorial-reveal,
+  .delay-200, .delay-400, .delay-600, .delay-800 {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 /* Body atmosphere → soft accent radial that adapts to theme via accent var */
 body {
   background-image:

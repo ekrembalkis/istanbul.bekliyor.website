@@ -17,7 +17,7 @@ export type Manifesto = {
   closing: string
 }
 
-export const MANIFESTO: Manifesto = {
+export const MANIFESTO = Object.freeze<Manifesto>({
   title: 'BİLDİRGE',
   preface:
     'Bu bir bildirgedir. Hiçbir parti adına değil, halkın iradesi adına yazıldı. Tek bir sayfa, beş madde, sonsuz imza.',
@@ -60,4 +60,4 @@ export const MANIFESTO: Manifesto = {
   ],
   closing:
     'İmzanız, bu bildirgenin canlı bir maddesidir. Burada yazılı olmayan altıncı madde, yarın yazacağımız maddedir.',
-}
+})

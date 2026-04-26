@@ -65,9 +65,10 @@ describe('validateSignature', () => {
 describe('SUBMIT_ERROR_MESSAGES', () => {
   it('has Turkish copy for every server error code', () => {
     const required = [
-      'validation', 'message_rejected', 'already_signed_today',
-      'rate_limited', 'db_unavailable', 'config_missing', 'db_error',
-      'network', 'unknown',
+      'validation', 'message_rejected', 'moderation_unavailable',
+      'already_signed_today', 'rate_limited', 'db_unavailable',
+      'config_missing', 'db_error', 'origin_not_allowed',
+      'method_not_allowed', 'network', 'unknown',
     ]
     for (const k of required) {
       expect(SUBMIT_ERROR_MESSAGES[k]).toBeTruthy()

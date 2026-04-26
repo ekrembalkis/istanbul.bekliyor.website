@@ -96,8 +96,8 @@ export function SignatureForm({ onSubmitted }: Props) {
           onChange={e => setName(e.target.value.slice(0, NAME_MAX))}
           maxLength={NAME_MAX}
           autoComplete="name"
+          aria-required="true"
           aria-invalid={Boolean(errors.name)}
-          required
           placeholder="Ad Soyad veya rumuz"
           className="mt-3 w-full font-serif text-ink bg-transparent border border-rule focus:border-accent focus:outline-none p-3 transition-colors"
           style={{ fontSize: 18 }}

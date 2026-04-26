@@ -35,8 +35,7 @@ export default function DetaineeProfilePage() {
       />
 
       <div className="relative z-10">
-        <Header detaineeName={fetch.status === 'ready' ? fetch.detainee.name : undefined}
-                day={fetch.status === 'ready' ? fetch.detainee.day_count : 0} />
+        <Header day={fetch.status === 'ready' ? fetch.detainee.day_count : 0} />
 
         {fetch.status === 'loading' && (
           <BodyShell>
@@ -158,7 +157,7 @@ export default function DetaineeProfilePage() {
   )
 }
 
-function Header({ detaineeName: _detaineeName, day }: { detaineeName: string | undefined; day: number }) {
+function Header({ day }: { day: number }) {
   return (
     <header className="px-[6vw] pt-10">
       <div className="max-w-[1480px] mx-auto grid grid-cols-12 gap-6">
